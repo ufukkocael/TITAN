@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - titan-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api/gateway
+    ports:
+      - "9000:9000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+  orchestrator:
+    build:
+      context: ./services/orchestrator
+    ports:
+      - "9005:9005"
+    depends_on:
+      - api-gateway
+      - ollama
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+  cloud-mock:
+    build:
+      context: ./services/cloud_mock
+    ports:
+      - "9100:9100"
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+  operator:
+    build:
+      context: ./services/operator
+    ports:
+      - "9001:9001"
+    depends_on:
+      - api-gateway
+      - ollama
+    networks:
+      - titan-net
+    restart: unless-stopped
+    volumes:
+      - /var/log:/host_logs:ro
+
+  programmer:
+    build:
+      context: ./services/programmer
+    ports:
+      - "9002:9002"
+    depends_on:
+      - api-gateway
+      - ollama
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+  researcher:
+    build:
+      context: ./services/researcher
+    ports:
+      - "9003:9003"
+    depends_on:
+      - api-gateway
+      - ollama
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+  companion:
+    build:
+      context: ./services/companion
+    ports:
+      - "9004:9004"
+    depends_on:
+      - api-gateway
+      - ollama
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+    networks:
+      - titan-net
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+
+networks:
+  titan-net:
+    driver: bridge

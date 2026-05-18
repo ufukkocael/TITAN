@@ -1,0 +1,35 @@
+# TITAN V4 - Varsayılan Konfigürasyon
+
+server:
+  host: "0.0.0.0"
+  
+services:
+  operator:
+    port: 9001
+  programmer:
+    port: 9002
+  researcher:
+    port: 9003
+  companion:
+    port: 9004
+  gateway:
+    port: 9000
+
+redis:
+  host: "localhost"
+  port: 6379
+
+memory:
+  path: "./data/titan_memory"
+
+auth:
+  jwt_secret: "change-me-in-production"
+  token_expiry: 86400
+
+rate_limit:
+  max_requests: 100
+  window_seconds: 60
+
+logging:
+  level: "INFO"
+  file: "./data/logs/titan.log"
