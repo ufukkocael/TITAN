@@ -1,0 +1,82 @@
+# TITAN V4 - Geliştirme Ortamı Konfigürasyonu
+# Kullanım: python start.py --config config/development.yaml
+
+server:
+  host: "0.0.0.0"
+  debug: true
+  reload: true
+  workers: 1
+
+services:
+  operator:
+    port: 9001
+    host: "localhost"
+  programmer:
+    port: 9002
+    host: "localhost"
+  researcher:
+    port: 9003
+    host: "localhost"
+  companion:
+    port: 9004
+    host: "localhost"
+  gateway:
+    port: 9000
+    host: "localhost"
+  orchestrator:
+    port: 9005
+    host: "localhost"
+  cloud_mock:
+    port: 9100
+    host: "localhost"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+memory:
+  path: "./data/dev_memory"
+  max_size_mb: 512
+
+auth:
+  jwt_secret: "dev-secret-key-2026-U-KOCAEL"
+  token_expiry: 86400
+  admin_user: "admin"
+  admin_password: "titan2026"
+
+rate_limit:
+  enabled: false  # Geliştirmede rate limit kapalı
+  max_requests: 1000
+  window_seconds: 60
+
+circuit_breaker:
+  enabled: true
+  failure_threshold: 3  # Daha hassas
+  recovery_timeout: 15
+  timeout: 5
+
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./data/logs/dev_titan.log"
+  console: true
+
+llm:
+  provider: "ollama"
+  ollama_url: "http://localhost:11434"
+  ollama_model: "llama3.2:3b"
+  temperature: 0.8  # Daha yaratıcı
+  max_tokens: 1024
+
+monitoring:
+  metrics_enabled: true
+  health_check_interval: 15
+  alert_webhook: ""
+
+features:
+  websocket: true
+  ssl: false
+  cors_origins: ["*"]
+  mock_services: true  # Geliştirmede mock servisler çalışır

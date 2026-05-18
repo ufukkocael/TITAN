@@ -1,0 +1,78 @@
+# TITAN V4 - Varsayılan Konfigürasyon
+
+server:
+  host: "0.0.0.0"
+  debug: true
+  reload: true
+
+services:
+  operator:
+    port: 9001
+    host: "localhost"
+  programmer:
+    port: 9002
+    host: "localhost"
+  researcher:
+    port: 9003
+    host: "localhost"
+  companion:
+    port: 9004
+    host: "localhost"
+  gateway:
+    port: 9000
+    host: "localhost"
+  orchestrator:
+    port: 9005
+    host: "localhost"
+  cloud_mock:
+    port: 9100
+    host: "localhost"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+memory:
+  path: "./data/titan_memory"
+  max_size_mb: 1024
+
+auth:
+  jwt_secret: "dev-secret-key-change-in-production"
+  token_expiry: 86400
+  admin_user: "admin"
+  admin_password: "titan2026"
+
+rate_limit:
+  enabled: true
+  max_requests: 100
+  window_seconds: 60
+
+circuit_breaker:
+  enabled: true
+  failure_threshold: 5
+  recovery_timeout: 30
+  timeout: 10
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./data/logs/titan.log"
+  console: true
+
+llm:
+  provider: "ollama"
+  ollama_url: "http://localhost:11434"
+  ollama_model: "llama3.2:3b"
+  temperature: 0.7
+  max_tokens: 512
+
+monitoring:
+  metrics_enabled: true
+  health_check_interval: 30
+
+features:
+  websocket: true
+  ssl: false
+  cors_origins: ["http://localhost:3000", "http://localhost:8501"]
