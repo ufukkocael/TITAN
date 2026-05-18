@@ -1,0 +1,26 @@
+# services/programmer/config.yaml
+mode: programmer
+server:
+  host: "0.0.0.0"
+  port: 9002
+
+gateway:
+  url: "http://localhost:9000"
+
+sandbox:
+  workspace: "./workspace"
+  allow_network: false
+  timeout: 60
+
+git:
+  user: "TITAN Programmer"
+  email: "programmer@titan-net.io"
+  remote: "origin"
+
+review:
+  require_critic_approval: true
+  min_score: 0.7
+
+codegen:
+  model: "titan-coder-v1"
+  max_tokens: 2048

@@ -1,0 +1,26 @@
+# services/researcher/config.yaml
+mode: researcher
+server:
+  host: "0.0.0.0"
+  port: 9003
+gateway:
+  url: "http://localhost:9000"
+
+research:
+  max_hypotheses: 100
+  experiment_timeout: 3600
+  auto_publish: false
+  peer_review_required: true
+
+learning:
+  replay_buffer_size: 10000
+  batch_size: 64
+  distillation_threshold: 0.9
+
+self_improve:
+  enabled: true
+  immutable_axioms:
+    - HONESTY
+  mutable_weights:
+    - EFFICIENCY
+    - LEARNING

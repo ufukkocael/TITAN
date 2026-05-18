@@ -1,0 +1,25 @@
+# services/orchestrator/config.yaml
+mode: orchestrator
+server:
+  host: "0.0.0.0"
+  port: 9005
+
+gateway_url: "http://localhost:9000"
+memory_path: "./titan_memory"
+
+llm:
+  provider: "ollama"  # "ollama" veya "groq"
+  ollama_url: "http://localhost:11434"
+  ollama_model: "llama3.2:3b"
+
+central_url: "http://localhost:9100"
+
+services:
+  operator: "http://localhost:9001"
+  programmer: "http://localhost:9002"
+  researcher: "http://localhost:9003"
+  companion: "http://localhost:9004"
+
+fallback_urls:
+  - "http://localhost:9100"
+sync_interval: 600
