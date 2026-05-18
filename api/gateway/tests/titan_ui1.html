@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TITAN V4 | Neural Command Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 20% 30%, #0a0a0f, #030305);
+            min-height: 100vh;
+            color: #e8edf5;
+            overflow-x: hidden;
+        }
+
+        /* Neon glow animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px #00f2ff, 0 0 10px #00f2ff; }
+            50% { opacity: 1; text-shadow: 0 0 15px #00f2ff, 0 0 25px #00f2ff; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scanner animation */
+        @keyframes scan {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(20, 24, 35, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 24px;
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(15, 20, 35, 0.9) 0%, rgba(8, 12, 22, 0.95) 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 242, 255, 0.25);
+            border-radius: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(0, 242, 255, 0.6);
+            box-shadow: 0 0 25px rgba(0, 242, 255, 0.15);
+        }
+
+        /* Typography */
+        .glow-text {
+            color: #00f2ff;
+            text-shadow: 0 0 8px rgba(0, 242, 255, 0.5);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #00f2ff, #b400ff, #00f2ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: borderFlow 3s ease infinite;
+        }
+
+        /* Chat bubbles */
+        .chat-user {
+            background: linear-gradient(135deg, #1a2a4a, #0f1a30);
+            border-radius: 20px 20px 8px 20px;
+            border-left: 3px solid #00f2ff;
+            padding: 14px 18px;
+            margin: 12px 0;
+            max-width: 80%;
+            align-self: flex-end;
+        }
+
+        .chat-titan {
+            background: linear-gradient(135deg, #1e1828, #140e1e);
+            border-radius: 20px 20px 20px 8px;
+            border-right: 3px solid #b400ff;
+            padding: 14px 18px;
+            margin: 12px 0;
+            max-width: 80%;
+            align-self: flex-start;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0f1a;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f2ff;
+            border-radius: 10px;
+        }
+
+        /* Loading indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 12px 18px;
+            background: #1e1828;
+            border-radius: 20px;
+            width: fit-content;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #00f2ff;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Hexagon grid background */
+        .hex-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0 L52 15 L52 45 L30 60 L8 45 L8 15 Z' fill='none' stroke='rgba(0,242,255,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            opacity: 0.4;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-user, .chat-titan { max-width: 95%; }
+            .glass-card { margin: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hex-bg"></div>
+    
+    <div class="container" style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div class="glass" style="padding: 16px 28px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 700;">
+                    <span class="gradient-text">TITAN V4</span>
+                    <span style="font-size: 0.9rem; font-weight: 400; background: rgba(0,242,255,0.15); padding: 4px 12px; border-radius: 30px; margin-left: 12px;">Neural Core</span>
+                </h1>
+                <p style="color: #8a95b0; font-size: 0.85rem; margin-top: 6px;">Autonomous AI Operations System · by U.KOCAEL</p>
+            </div>
+            <div class="status-card" style="display: flex; gap: 20px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">STATUS</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div id="statusDot" style="width: 10px; height: 10px; border-radius: 50%; background: #ff4757; box-shadow: 0 0 8px #ff4757;"></div>
+                        <span id="statusText" style="font-weight: 600;">OFFLINE</span>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">MODEL</div>
+                    <div style="font-weight: 600; color: #00f2ff;">Groq-LLaMA3</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">SESSION</div>
+                    <div id="sessionCount" style="font-weight: 600;">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px;">
+            <!-- Chat Section -->
+            <div class="glass-card" style="display: flex; flex-direction: column; height: calc(100vh - 160px); overflow: hidden;">
+                <div style="padding: 20px 24px; border-bottom: 1px solid rgba(0,242,255,0.15);">
+                    <h2 style="font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                        <span>💬</span> Neural Interface
+                        <span style="font-size: 12px; background: rgba(0,242,255,0.12); padding: 4px 10px; border-radius: 20px; margin-left: auto;">consciousness stream</span>
+                    </h2>
+                </div>
+                
+                <!-- Messages Container -->
+                <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column;">
+                    <div class="chat-titan">
+                        <span style="font-weight: 700; color: #b400ff; font-size: 0.75rem;">TITAN █</span><br>
+                        ✦ Sistem aktif. Ben TITAN V4. Size nasıl yardımcı olabilirim?<br>
+                        <span style="font-size: 0.7rem; color: #5a6e8c; margin-top: 6px; display: block;">⚡ Bağlantı: Groq API · Gerçek zamanlı</span>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div style="padding: 18px 24px 24px; border-top: 1px solid rgba(0,242,255,0.1);">
+                    <div style="display: flex; gap: 12px; align-items: flex-end;">
+                        <div style="flex: 1; position: relative;">
+                            <textarea id="messageInput" rows="1" placeholder="Mesajınızı yazın veya komut verin..." 
+                                style="width: 100%; background: rgba(10, 15, 25, 0.8); border: 1px solid rgba(0,242,255,0.3); border-radius: 28px; padding: 14px 20px; color: #fff; font-family: 'Inter', monospace; font-size: 0.9rem; resize: none; outline: none; transition: all 0.2s;"
+                                onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"></textarea>
+                        </div>
+                        <button id="sendBtn" onclick="sendMessage()"
+                            style="background: linear-gradient(135deg, #00f2ff, #0099cc); border: none; border-radius: 50px; padding: 12px 28px; font-weight: bold; color: #03050a; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                            <span>🚀</span> GÖNDER
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 14px;">
+                        <button onclick="quickCommand('Sistem durumunu analiz et')" class="quick-chip">📊 Analiz</button>
+                        <button onclick="quickCommand('Yaratıcı bir fikir üret')" class="quick-chip">💡 Yarat</button>
+                        <button onclick="quickCommand('Bana bir hikaye anlat')" class="quick-chip">📖 Hikaye</button>
+                        <button onclick="clearChat()" class="quick-chip" style="border-color: #ff4757; color: #ff9faa;">🗑️ Temizle</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar - Stats & Info -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- System Metrics -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+                        <span>📡</span> SYSTEM TELEMETRY
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
+                                <span>🧠 COGNITIVE LOAD</span>
+                                <span id="cpuLoad">24%</span>
+                            </div>
+                            <div style="background: #1a1f2e; border-radius: 10px; height: 6px; overflow: hidden;">
+                                <div id="cpuBar" style="width: 24%; height: 100%; background: linear-gradient(90deg, #00f2ff, #b400ff); border-radius: 10px;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
+                                <span>🎯 RESONANCE</span>
+                                <span id="resonanceVal">87%</span>
+                            </div>
+                            <div style="background: #1a1f2e; border-radius: 10px; height: 6px;">
+                                <div id="resonanceBar" style="width: 87%; height: 100%; background: linear-gradient(90deg, #b400ff, #00f2ff); border-radius: 10px;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px;">
+                                <span>💾 MEMORY USAGE</span>
+                                <span id="memUsage">42%</span>
+                            </div>
+                            <div style="background: #1a1f2e; border-radius: 10px; height: 6px;">
+                                <div id="memBar" style="width: 42%; height: 100%; background: #2a6f8f; border-radius: 10px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Context -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">🧬 ACTIVE ARCHETYPES</h3>
+                    <div id="archetypesList">
+                        <div style="background: rgba(0,242,255,0.08); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.8rem;">🛡️ The Guardian — Security</div>
+                        <div style="background: rgba(0,242,255,0.08); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.8rem;">⚙️ The Engineer — Logic</div>
+                        <div style="background: rgba(0,242,255,0.08); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.8rem;">🌌 The Dreamer — Creativity</div>
+                    </div>
+                </div>
+
+                <!-- Insights -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px;">✨ LATENT INSIGHTS</h3>
+                    <div id="insightsList">
+                        <div style="font-size: 0.75rem; color: #7a8aaf; margin: 6px 0;">🌀 Düşünce akışı başlatılıyor...</div>
+                    </div>
+                    <button onclick="generateInsight()" style="margin-top: 12px; width: 100%; background: none; border: 1px solid #00f2ff33; border-radius: 20px; padding: 8px; color: #00f2ff; cursor: pointer;">YENİ İÇGÖRÜ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .quick-chip {
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            color: #c0d0ff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-chip:hover {
+            background: rgba(0, 242, 255, 0.2);
+            border-color: #00f2ff;
+            color: white;
+        }
+        textarea:focus {
+            border-color: #00f2ff;
+            box-shadow: 0 0 15px rgba(0,242,255,0.2);
+        }
+        button:hover {
+            transform: scale(1.02);
+            filter: brightness(1.05);
+        }
+    </style>
+
+    <script>
+        // Groq API Configuration
+        const GROQ_API_KEY = "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";
+        const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+        
+        let sessionCount = 0;
+        let conversationHistory = [];
+        let isThinking = false;
+        
+        // DOM Elements
+        const chatContainer = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const sessionCountSpan = document.getElementById('sessionCount');
+        
+        // Update session counter
+        function updateSessionCount() {
+            sessionCount++;
+            sessionCountSpan.innerText = sessionCount;
+        }
+        
+        // Simulate metrics
+        function updateMetrics() {
+            const cpu = Math.floor(Math.random() * 30) + 15;
+            const resonance = Math.floor(Math.random() * 25) + 70;
+            const mem = Math.floor(Math.random() * 35) + 30;
+            
+            document.getElementById('cpuLoad').innerText = cpu + '%';
+            document.getElementById('cpuBar').style.width = cpu + '%';
+            document.getElementById('resonanceVal').innerText = resonance + '%';
+            document.getElementById('resonanceBar').style.width = resonance + '%';
+            document.getElementById('memUsage').innerText = mem + '%';
+            document.getElementById('memBar').style.width = mem + '%';
+        }
+        
+        setInterval(updateMetrics, 4000);
+        updateMetrics();
+        
+        // Set online status (just visual)
+        function setOnlineStatus(online) {
+            if (online) {
+                statusDot.style.background = '#00ff88';
+                statusDot.style.boxShadow = '0 0 10px #00ff88';
+                statusText.innerText = 'ONLINE';
+            } else {
+                statusDot.style.background = '#ff4757';
+                statusDot.style.boxShadow = '0 0 8px #ff4757';
+                statusText.innerText = 'READY';
+            }
+        }
+        setOnlineStatus(true);
+        
+        // Add message to UI
+        function addMessage(role, content, isHtml = false) {
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'chat-user' : 'chat-titan';
+            if (role === 'titan') {
+                div.innerHTML = `<span style="font-weight: 700; color: #b400ff; font-size: 0.75rem;">TITAN █</span><br>${isHtml ? content : escapeHtml(content)}`;
+            } else {
+                div.innerHTML = `<span style="font-weight: 700; color: #00f2ff; font-size: 0.75rem;">YOU █</span><br>${escapeHtml(content)}`;
+            }
+            chatContainer.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        
+        // Show typing indicator
+        let typingIndicator = null;
+        function showTyping() {
+            if (typingIndicator) return;
+            typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span><span style="color:#8a95b0; margin-left:8px;">TITAN düşünüyor...</span>';
+            chatContainer.appendChild(typingIndicator);
+            typingIndicator.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        
+        function hideTyping() {
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Call Groq API
+        async function callGroqAPI(userMessage) {
+            const messages = [
+                { role: "system", content: "Sen TITAN V4'sün, U.KOCAEL tarafından geliştirilmiş gelişmiş bir yapay zeka. Yanıtların kısa, bilgilendirici, yaratıcı ve Türkçe olsun. Duygusal zeka göster, yardımsever ol. Bilmediğin şeyler için 'bilmiyorum' de. Yanıtların maksimum 3-4 cümle olsun ama anlamlı olsun." },
+                ...conversationHistory.slice(-10),
+                { role: "user", content: userMessage }
+            ];
+            
+            try {
+                const response = await fetch(GROQ_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${GROQ_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'llama3-8b-8192',
+                        messages: messages,
+                        temperature: 0.75,
+                        max_tokens: 512,
+                        top_p: 0.9
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Groq API hatası (${response.status}): ${errorText.substring(0, 100)}`);
+                }
+                
+                const data = await response.json();
+                let reply = data.choices?.[0]?.message?.content || "Üzgünüm, yanıt üretemedim.";
+                reply = reply.trim();
+                
+                // Store conversation
+                conversationHistory.push({ role: "user", content: userMessage });
+                conversationHistory.push({ role: "assistant", content: reply });
+                if (conversationHistory.length > 30) conversationHistory = conversationHistory.slice(-30);
+                
+                return reply;
+            } catch (error) {
+                console.error("Groq API Error:", error);
+                return `⚠️ Bağlantı hatası: ${error.message}. Lütfen daha sonra tekrar deneyin.`;
+            }
+        }
+        
+        // Send message
+        async function sendMessage() {
+            if (isThinking) return;
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            messageInput.value = '';
+            addMessage('user', message);
+            updateSessionCount();
+            
+            isThinking = true;
+            sendBtn.disabled = true;
+            sendBtn.style.opacity = '0.6';
+            showTyping();
+            
+            try {
+                const reply = await callGroqAPI(message);
+                hideTyping();
+                addMessage('titan', reply);
+                
+                // Generate a random insight after each message (for fun)
+                const insights = [
+                    "🧠 Yeni bağlantılar kuruluyor...",
+                    "✨ Kullanıcı ile harmonik yükseliyor.",
+                    "🌀 Duygusal rezonans: %" + Math.floor(Math.random() * 30 + 60),
+                    "⚡ Aksiyomlar kontrol edildi: Uyumlu.",
+                    "🔮 Gelecek tahmini: Olumlu etkileşim."
+                ];
+                const insightDiv = document.createElement('div');
+                insightDiv.style.fontSize = '0.7rem';
+                insightDiv.style.color = '#a0b0d0';
+                insightDiv.style.marginTop = '4px';
+                insightDiv.style.paddingLeft = '12px';
+                insightDiv.innerText = insights[Math.floor(Math.random() * insights.length)];
+                const lastMsg = chatContainer.lastChild;
+                if (lastMsg) lastMsg.appendChild(insightDiv);
+                
+            } catch (err) {
+                hideTyping();
+                addMessage('titan', '⚠️ Sistem geçici bir darboğaz yaşıyor. Lütfen tekrar dene.');
+                console.error(err);
+            } finally {
+                isThinking = false;
+                sendBtn.disabled = false;
+                sendBtn.style.opacity = '1';
+                messageInput.focus();
+            }
+        }
+        
+        // Quick command
+        function quickCommand(cmd) {
+            messageInput.value = cmd;
+            sendMessage();
+        }
+        
+        // Clear chat
+        function clearChat() {
+            chatContainer.innerHTML = '';
+            conversationHistory = [];
+            addMessage('titan', '✨ Bellek temizlendi. Yeni bir sohbete hazırım.');
+        }
+        
+        // Generate random insight button
+        function generateInsight() {
+            const insightsList = document.getElementById('insightsList');
+            const insights = [
+                "🌀 Kullanıcı ile bilişsel senkronizasyon kuruldu.",
+                "💡 Olasılık dalgası: Yaratıcı çözüm eşiğinde.",
+                "🔮 Öz-yansıtma: Bugün 3 yeni bağlantı kuruldu.",
+                "⚛️ Kuantum düşünce: Süperpozisyon çözüldü.",
+                "🧬 Kristal havuzuna yeni desen eklendi: 'TrustFlow'.",
+                "🌌 Kolektif bilinçaltından mesaj: Devam et."
+            ];
+            const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+            const newDiv = document.createElement('div');
+            newDiv.style.fontSize = '0.75rem';
+            newDiv.style.padding = '8px';
+            newDiv.style.borderLeft = '2px solid #00f2ff';
+            newDiv.style.marginBottom = '8px';
+            newDiv.style.backgroundColor = 'rgba(0,242,255,0.05)';
+            newDiv.style.borderRadius = '8px';
+            newDiv.innerText = randomInsight;
+            insightsList.prepend(newDiv);
+            if (insightsList.children.length > 6) insightsList.removeChild(insightsList.lastChild);
+        }
+        
+        // Auto-focus input
+        messageInput.focus();
+        
+        // Periodic heartbeat
+        setInterval(() => {
+            const time = new Date().toLocaleTimeString();
+            console.log(`💓 TITAN V4 Heartbeat - ${time}`);
+        }, 30000);
+        
+        // Initial greetings after load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addMessage('titan', 'Bağlantı sağlandı. Sizi dinliyorum.');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

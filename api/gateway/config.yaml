@@ -1,0 +1,39 @@
+# api/gateway/config.yaml
+server:
+  host: "0.0.0.0"
+  port: 9000
+
+services:
+  operator:
+    url: "http://127.0.0.1:9001"
+    health: "/health"
+  programmer:
+    url: "http://127.0.0.1:9002"
+    health: "/health"
+  researcher:
+    url: "http://127.0.0.1:9003"
+    health: "/health"
+  companion:
+    url: "http://127.0.0.1:9004"
+    health: "/health"
+  orchestrator:
+    url: "http://127.0.0.1:9005"
+    health: "/health"
+
+redis:
+  url: "redis://localhost:6379"
+  ttl: 3600
+
+auth:
+  enabled: true
+  jwt_secret: "titan-v4-secret-key-U-KOCAEL-2026"
+  token_expiry: 86400
+
+rate_limit:
+  enabled: true
+  max_requests: 100
+  window_seconds: 60
+
+circuit_breaker:
+  failure_threshold: 5
+  recovery_timeout: 30

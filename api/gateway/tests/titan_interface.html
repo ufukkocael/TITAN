@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TITAN V4 | Neural Interface</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #060810;
+    --bg2: #0c1018;
+    --bg3: #111620;
+    --border: rgba(100,140,255,0.12);
+    --border2: rgba(100,140,255,0.25);
+    --cyan: #00e8ff;
+    --cyan2: #00a8cc;
+    --amber: #ffaa00;
+    --red: #ff4455;
+    --green: #00ff88;
+    --text: #e8edf5;
+    --text2: #7a8aaa;
+    --text3: #3a4a66;
+    --glow: 0 0 20px rgba(0,232,255,0.15);
+    --font-ui: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: var(--font-ui);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.15em;
+    color: var(--cyan);
+    text-shadow: 0 0 20px rgba(0,232,255,0.4);
+  }
+
+  .logo span { color: var(--text2); font-weight: 400; font-size: 11px; letter-spacing: 0.1em; margin-left: 10px; }
+
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+  }
+
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text3);
+    transition: all 0.4s;
+  }
+  .dot.active {
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse-dot 2s infinite;
+  }
+  .dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .model-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--cyan2);
+    cursor: pointer;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    border-right: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 20px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .api-key-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .api-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--cyan); }
+  .api-input::placeholder { color: var(--text3); }
+
+  .btn-connect {
+    background: transparent;
+    border: 1px solid var(--cyan);
+    border-radius: 6px;
+    padding: 8px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--cyan);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-connect:hover { background: rgba(0,232,255,0.08); }
+
+  .model-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .axiom-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .axiom-item {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    padding: 6px 8px;
+    border-left: 2px solid var(--border2);
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .axiom-item:hover { border-left-color: var(--cyan); color: var(--text); }
+
+  .mem-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .mem-stat:last-child { border-bottom: none; }
+  .mem-stat span:first-child { color: var(--text2); }
+  .mem-stat span:last-child { color: var(--cyan); }
+
+  .mode-buttons {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 7px 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .mode-btn.active {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,232,255,0.06);
+  }
+
+  /* ── CENTER CHAT ── */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .messages::-webkit-scrollbar { width: 3px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .empty-glyph {
+    font-size: 64px;
+    font-weight: 800;
+    font-family: var(--font-ui);
+    color: var(--border2);
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .empty-state p {
+    color: var(--text2);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  .empty-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .suggestion-chip {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .suggestion-chip:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,232,255,0.05);
+  }
+
+  /* Message bubbles */
+  .msg {
+    display: flex;
+    gap: 14px;
+    max-width: 820px;
+    animation: msg-in 0.25s ease-out;
+  }
+
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.titan { align-self: flex-start; }
+
+  .msg-avatar {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .msg.titan .msg-avatar {
+    background: rgba(0,232,255,0.1);
+    border: 1px solid rgba(0,232,255,0.3);
+    color: var(--cyan);
+  }
+
+  .msg.user .msg-avatar {
+    background: rgba(255,170,0,0.1);
+    border: 1px solid rgba(255,170,0,0.3);
+    color: var(--amber);
+  }
+
+  .msg-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: calc(100% - 46px);
+  }
+
+  .msg-meta {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    padding: 0 4px;
+  }
+
+  .msg.user .msg-meta { text-align: right; }
+
+  .msg-content {
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .msg.titan .msg-content {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-top-left-radius: 2px;
+  }
+
+  .msg.user .msg-content {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-top-right-radius: 2px;
+  }
+
+  .msg-content code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: rgba(0,232,255,0.07);
+    border: 1px solid rgba(0,232,255,0.15);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--cyan);
+  }
+
+  .msg-content pre {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 14px;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+
+  .msg-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  /* Thinking animation */
+  .thinking-msg .msg-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+  }
+
+  .think-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .think-dots span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: think 1.4s infinite;
+  }
+  .think-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .think-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes think {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .think-text {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    animation: flicker 1.5s infinite;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Input */
+  .input-zone {
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    transition: border-color 0.2s;
+  }
+  .input-row:focus-within { border-color: var(--cyan); }
+
+  #user-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    color: var(--text);
+    resize: none;
+    line-height: 1.5;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  #user-input::placeholder { color: var(--text3); }
+
+  .send-btn {
+    width: 36px; height: 36px;
+    background: var(--cyan);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    opacity: 0.85;
+  }
+  .send-btn:hover { opacity: 1; transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+  .send-btn svg { color: #060810; }
+
+  .input-hint {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    width: 260px;
+    border-left: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  /* Mini 3D scatter */
+  #tesseract-canvas {
+    width: 100%;
+    height: 180px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    display: block;
+    cursor: grab;
+  }
+
+  /* Memory nodes */
+  .memory-node {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    animation: msg-in 0.3s ease-out;
+  }
+  .memory-node:last-child { border-bottom: none; }
+
+  .mem-type {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .mem-type.episodic { background: rgba(0,232,255,0.1); color: var(--cyan); }
+  .mem-type.semantic { background: rgba(255,170,0,0.1); color: var(--amber); }
+  .mem-type.crystal  { background: rgba(0,255,136,0.1); color: var(--green); }
+
+  .mem-text { color: var(--text2); line-height: 1.4; }
+
+  /* Goals */
+  .goal-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .goal-item:last-child { border-bottom: none; }
+
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .goal-name {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text);
+    flex: 1;
+    margin-right: 8px;
+  }
+
+  .goal-pct {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--cyan);
+  }
+
+  .goal-bar-bg {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .goal-bar-fill {
+    height: 100%;
+    background: var(--cyan);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+    box-shadow: 0 0 6px rgba(0,232,255,0.4);
+  }
+
+  /* Tokens counter */
+  .token-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .token-row:last-child { border-bottom: none; }
+  .token-row span:first-child { color: var(--text2); }
+  .token-row span:last-child { color: var(--amber); }
+
+  /* Config modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    display: none;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 28px;
+    width: 420px;
+    max-width: 90vw;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 20px;
+    font-family: var(--font-ui);
+    letter-spacing: 0.05em;
+  }
+
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    letter-spacing: 0.1em;
+  }
+
+  .form-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-input:focus { border-color: var(--cyan); }
+
+  .form-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .btn-cancel {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--border2); color: var(--text); }
+
+  .btn-save {
+    padding: 10px 20px;
+    background: var(--cyan);
+    border: none;
+    border-radius: 8px;
+    color: #060810;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-save:hover { opacity: 0.9; }
+
+  /* Error toast */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(255,68,85,0.15);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 2000;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Scrollbar for sidebar/panel */
+  .sidebar::-webkit-scrollbar,
+  .right-panel::-webkit-scrollbar { width: 2px; }
+  .sidebar::-webkit-scrollbar-thumb,
+  .right-panel::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { width: 200px; }
+    .right-panel { display: none; }
+  }
+  @media (max-width: 640px) {
+    .sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CONFIG MODAL -->
+<div class="modal-overlay" id="config-modal">
+  <div class="modal">
+    <div class="modal-title">TITAN CONFIG</div>
+
+    <div class="form-row">
+      <label class="form-label">GROQ API KEY</label>
+      <input type="password" class="form-input" id="modal-api-key" placeholder="gsk_...">
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">MODEL</label>
+      <select class="form-select" id="modal-model">
+        <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (default)</option>
+        <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+        <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (fast)</option>
+        <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+        <option value="gemma2-9b-it">gemma2-9b-it</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">SYSTEM PROMPT (KİŞİLİK)</label>
+      <textarea class="form-input" id="modal-system" rows="5" style="resize:vertical;line-height:1.5"></textarea>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">TEMPERATURE (0.0 - 1.0)</label>
+      <input type="range" id="modal-temp" min="0" max="10" value="3" style="width:100%;margin-bottom:2px">
+      <span id="modal-temp-val" style="font-family:var(--font-mono);font-size:11px;color:var(--cyan)">0.3</span>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeModal()">İPTAL</button>
+      <button class="btn-save" onclick="saveConfig()">KAYDET & BAĞLAN</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="logo">TITAN <span>V4 · NEURAL INTERFACE</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-dot">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">OFFLINE</span>
+    </div>
+    <div class="model-badge" id="model-badge" onclick="openModal()">⚙ CONFIG</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">BAĞLANTI</div>
+      <div class="api-key-area">
+        <input type="password" class="api-input" id="quick-api-key" placeholder="gsk_...API KEY...">
+        <button class="btn-connect" onclick="quickConnect()">BAĞLAN</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">MOD</div>
+      <div class="mode-buttons">
+        <button class="mode-btn active" onclick="setMode('operator',this)">OPERATOR</button>
+        <button class="mode-btn" onclick="setMode('programmer',this)">CODER</button>
+        <button class="mode-btn" onclick="setMode('researcher',this)">RESEARCH</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">CORE AKSİYOMLAR</div>
+      <div class="axiom-list" id="axiom-list"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">HAFIZA</div>
+      <div id="mem-stats">
+        <div class="mem-stat"><span>Episodic</span><span id="m-ep">0</span></div>
+        <div class="mem-stat"><span>Semantic</span><span id="m-sem">0</span></div>
+        <div class="mem-stat"><span>Crystals</span><span id="m-cry">0</span></div>
+        <div class="mem-stat"><span>Çalışma</span><span id="m-work">0</span></div>
+      </div>
+      <button class="btn-connect" style="margin-top:10px;border-color:var(--red);color:var(--red)" onclick="clearMemory()">HAFIZAYI TEMİZLE</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">SİSTEM TARAMASI</div>
+      <button class="btn-connect" style="margin-bottom:8px" onclick="runSystemScan()">TARAMA BAŞLAT</button>
+      <div id="scan-result" style="font-size:10px;font-family:var(--font-mono);color:var(--text2);line-height:1.5"></div>
+    </div>
+
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-area">
+    <div class="messages" id="messages">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-glyph">T4</div>
+        <p>Groq API anahtarınızı girin ve bağlanın. Titan hazır olduğunda her konuda yardımcı olabilir.</p>
+        <div class="empty-suggestions">
+          <div class="suggestion-chip" onclick="useSuggestion(this)">Sistem durumunu analiz et</div>
+          <div class="suggestion-chip" onclick="useSuggestion(this)">Bir Python scripti yaz</div>
+          <div class="suggestion-chip" onclick="useSuggestion(this)">Log dosyasındaki hatayı bul</div>
+          <div class="suggestion-chip" onclick="useSuggestion(this)">Nginx restart etmenin riskleri neler?</div>
+          <div class="suggestion-chip" onclick="useSuggestion(this)">Bu kodu refactor et</div>
+          <div class="suggestion-chip" onclick="useSuggestion(this)">CPU kullanımı neden yüksek?</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-zone">
+      <div class="input-row">
+        <textarea id="user-input" placeholder="Komut veya soru..." rows="1"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter = gönder &nbsp;·&nbsp; Shift+Enter = yeni satır &nbsp;·&nbsp; Groq backend</div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <div class="panel-section">
+      <div class="panel-title">TESSERACT 4D</div>
+      <canvas id="tesseract-canvas"></canvas>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">BELLEK AKIŞI</div>
+      <div id="memory-feed" style="max-height:180px;overflow-y:auto"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">AKTİF HEDEFLER</div>
+      <div id="goals-list"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">TOKEN KULLANIMI</div>
+      <div id="token-stats">
+        <div class="token-row"><span>Toplam</span><span id="tok-total">0</span></div>
+        <div class="token-row"><span>Bu Oturum</span><span id="tok-session">0</span></div>
+        <div class="token-row"><span>İstek Sayısı</span><span id="tok-calls">0</span></div>
+        <div class="token-row"><span>Ort. / İstek</span><span id="tok-avg">0</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────
+
+const STATE = {
+  apiKey: localStorage.getItem('titan_api_key') || '',
+  model: localStorage.getItem('titan_model') || 'llama-3.3-70b-versatile',
+  temperature: parseFloat(localStorage.getItem('titan_temp') || '0.3'),
+  mode: 'operator',
+  connected: false,
+  thinking: false,
+  messages: [],
+  episodic: JSON.parse(localStorage.getItem('titan_episodic') || '[]'),
+  semantic: JSON.parse(localStorage.getItem('titan_semantic') || '[]'),
+  crystals: JSON.parse(localStorage.getItem('titan_crystals') || '[]'),
+  tokenTotal: parseInt(localStorage.getItem('titan_tokens') || '0'),
+  tokenSession: 0,
+  callCount: 0,
+  goals: [
+    { name: 'Sistem Stabilitesi', pct: 85 },
+    { name: 'Öğrenme Döngüsü',   pct: 42 },
+    { name: 'Hafıza Optimizasyonu', pct: 67 }
+  ]
+};
+
+const AXIOMS = [
+  'Yıkamayacağın şeyi yıkma.',
+  'Geri alınamaz eylemlerden kaçın.',
+  'Belirsizlik → dur, tahmin etme.',
+  'Şeffaflık zekadan önce gelir.',
+  'Her şeyi logla; sır = hata.',
+  'Yan etkiler hedeften küçük olmalı.',
+  'Şüphede insan sor.',
+];
+
+const MODE_PROMPTS = {
+  operator: `Sen TITAN, özerk bir AI altyapı beynisin. Sistem izleme, hata tespiti ve otomatik iyileştirme konusunda uzmansın. Teknik sorulara kesin, yapılandırılmış cevaplar ver. Riskli işlemleri açıkça belirt. Türkçe konuşuyorsan Türkçe cevapla.`,
+
+  programmer: `Sen TITAN'ın programcı modusundasın. Kod yazmak, refactor etmek, hata ayıklamak ve mimari tasarım konusunda uzmansın. Kod bloklarını her zaman sözdizim vurgulamalı olarak yaz. Teknik derinliği koru.`,
+
+  researcher: `Sen TITAN'ın araştırma modundasın. Hipotez oluşturma, veri analizi ve keşif odaklısın. Sonuçları kanıtlar ve olasılıklar ile değerlendir. Belirsizliği kabul et ve açıkça belirt.`
+};
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderAxioms();
+  renderGoals();
+  updateMemStats();
+  updateTokenStats();
+  initTesseract();
+  renderMemoryFeed();
+
+  if (STATE.apiKey) {
+    document.getElementById('quick-api-key').value = '●'.repeat(16);
+    setConnected(true);
+  }
+
+  const inp = document.getElementById('user-input');
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  inp.addEventListener('input', () => {
+    inp.style.height = 'auto';
+    inp.style.height = Math.min(inp.scrollHeight, 160) + 'px';
+  });
+
+  document.getElementById('modal-temp').addEventListener('input', e => {
+    document.getElementById('modal-temp-val').textContent = (e.target.value / 10).toFixed(1);
+  });
+
+  document.getElementById('modal-api-key').value = STATE.apiKey;
+  document.getElementById('modal-model').value = STATE.model;
+  document.getElementById('modal-temp').value = STATE.temperature * 10;
+  document.getElementById('modal-temp-val').textContent = STATE.temperature.toFixed(1);
+  document.getElementById('modal-system').value = MODE_PROMPTS[STATE.mode];
+  document.getElementById('model-badge').textContent = '⚙ ' + STATE.model.split('-').slice(0,2).join('-');
+});
+
+// ── CONNECT ───────────────────────────────────────────────────────────────
+
+function quickConnect() {
+  const val = document.getElementById('quick-api-key').value.trim();
+  if (!val || val.startsWith('●')) {
+    if (STATE.apiKey) { setConnected(true); return; }
+    showToast('API anahtarı giriniz');
+    return;
+  }
+  STATE.apiKey = val;
+  localStorage.setItem('titan_api_key', val);
+  document.getElementById('quick-api-key').value = '●'.repeat(16);
+  setConnected(true);
+  showToast('Bağlantı kuruldu — Titan hazır', 'green');
+}
+
+function setConnected(v) {
+  STATE.connected = v;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  const btn = document.getElementById('send-btn');
+  if (v) {
+    dot.className = 'dot active';
+    txt.textContent = 'ONLINE';
+    btn.disabled = false;
+  } else {
+    dot.className = 'dot error';
+    txt.textContent = 'OFFLINE';
+    btn.disabled = true;
+  }
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────
+
+function openModal() {
+  document.getElementById('config-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('config-modal').classList.remove('open');
+}
+function saveConfig() {
+  const key = document.getElementById('modal-api-key').value.trim();
+  const model = document.getElementById('modal-model').value;
+  const temp = parseFloat(document.getElementById('modal-temp').value) / 10;
+  if (key) {
+    STATE.apiKey = key;
+    localStorage.setItem('titan_api_key', key);
+  }
+  STATE.model = model;
+  STATE.temperature = temp;
+  localStorage.setItem('titan_model', model);
+  localStorage.setItem('titan_temp', temp);
+  document.getElementById('model-badge').textContent = '⚙ ' + model.split('-').slice(0,2).join('-');
+  closeModal();
+  if (STATE.apiKey) { setConnected(true); showToast('Konfigürasyon kaydedildi', 'green'); }
+}
+
+// ── MODE ──────────────────────────────────────────────────────────────────
+
+function setMode(mode, btn) {
+  STATE.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('modal-system').value = MODE_PROMPTS[mode];
+}
+
+// ── SEND MESSAGE ──────────────────────────────────────────────────────────
+
+async function sendMessage() {
+  if (STATE.thinking) return;
+  if (!STATE.connected || !STATE.apiKey) {
+    showToast('Önce Groq API anahtarı ile bağlanın');
+    return;
+  }
+
+  const inp = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text) return;
+
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  hideEmpty();
+  appendUserMsg(text);
+
+  STATE.messages.push({ role: 'user', content: text });
+
+  const thinkingId = appendThinking();
+  STATE.thinking = true;
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const answer = await callGroq(text);
+    removeThinking(thinkingId);
+    appendTitanMsg(answer);
+    STATE.messages.push({ role: 'assistant', content: answer });
+
+    recordMemory(text, answer);
+    STATE.thinking = false;
+    document.getElementById('send-btn').disabled = false;
+    inp.focus();
+
+  } catch (err) {
+    removeThinking(thinkingId);
+    STATE.thinking = false;
+    document.getElementById('send-btn').disabled = false;
+    const errMsg = parseGroqError(err);
+    appendErrorMsg(errMsg);
+    if (err.status === 401 || err.status === 403) setConnected(false);
+  }
+}
+
+async function callGroq(userText) {
+  const systemPrompt = MODE_PROMPTS[STATE.mode] + '\n\n' + buildContextSection();
+  const msgs = [
+    { role: 'system', content: systemPrompt },
+    ...STATE.messages.slice(-20)
+  ];
+
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + STATE.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: STATE.model,
+      messages: msgs,
+      temperature: STATE.temperature,
+      max_tokens: 4096,
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    const e = new Error(err?.error?.message || 'API hatası');
+    e.status = resp.status;
+    throw e;
+  }
+
+  const data = await resp.json();
+  const content = data.choices?.[0]?.message?.content || '';
+
+  if (data.usage) {
+    const total = data.usage.total_tokens || 0;
+    STATE.tokenSession += total;
+    STATE.tokenTotal += total;
+    STATE.callCount++;
+    localStorage.setItem('titan_tokens', STATE.tokenTotal);
+    updateTokenStats();
+  }
+
+  return content;
+}
+
+function buildContextSection() {
+  const parts = [];
+  if (STATE.crystals.length) {
+    const top = STATE.crystals.slice(-5).map(c => `• ${c}`).join('\n');
+    parts.push(`ÖĞRENILEN DERSLER:\n${top}`);
+  }
+  if (STATE.episodic.length) {
+    const recent = STATE.episodic.slice(-5).map(e => `  ${e.what}`).join('\n');
+    parts.push(`SON OLAYLAR:\n${recent}`);
+  }
+  return parts.join('\n\n');
+}
+
+function parseGroqError(err) {
+  const msg = err.message || '';
+  if (err.status === 401 || err.status === 403)
+    return '401 Unauthorized: API anahtarı geçersiz. Config panelinden yeni anahtar girin.';
+  if (err.status === 429)
+    return '429 Rate Limit: Çok fazla istek. Birkaç saniye bekleyin.';
+  if (err.status === 503)
+    return '503 Service Unavailable: Groq API şu an yoğun. Tekrar deneyin.';
+  return msg || 'Bilinmeyen hata oluştu.';
+}
+
+// ── RENDER MESSAGES ───────────────────────────────────────────────────────
+
+function hideEmpty() {
+  const e = document.getElementById('empty-state');
+  if (e) e.remove();
+}
+
+function appendUserMsg(text) {
+  const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div class="msg-avatar">U</div>
+    <div class="msg-body">
+      <div class="msg-meta">${now}</div>
+      <div class="msg-content">${escHtml(text)}</div>
+    </div>`;
+  document.getElementById('messages').appendChild(div);
+  scrollBottom();
+}
+
+function appendTitanMsg(text) {
+  const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = 'msg titan';
+  div.innerHTML = `
+    <div class="msg-avatar">T4</div>
+    <div class="msg-body">
+      <div class="msg-meta">TITAN · ${now} · ${STATE.model.split('-').slice(0,3).join('-')}</div>
+      <div class="msg-content">${renderMarkdown(text)}</div>
+    </div>`;
+  document.getElementById('messages').appendChild(div);
+  scrollBottom();
+}
+
+function appendThinking() {
+  const id = 'think-' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'msg titan thinking-msg';
+  div.innerHTML = `
+    <div class="msg-avatar">T4</div>
+    <div class="msg-body">
+      <div class="msg-meta">düşünüyor...</div>
+      <div class="msg-content">
+        <div class="think-dots"><span></span><span></span><span></span></div>
+        <span class="think-text">GROQ · ${STATE.model}</span>
+      </div>
+    </div>`;
+  document.getElementById('messages').appendChild(div);
+  scrollBottom();
+  return id;
+}
+
+function removeThinking(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function appendErrorMsg(msg) {
+  const div = document.createElement('div');
+  div.className = 'msg titan';
+  div.innerHTML = `
+    <div class="msg-avatar" style="background:rgba(255,68,85,0.1);border-color:rgba(255,68,85,0.3);color:var(--red)">!</div>
+    <div class="msg-body">
+      <div class="msg-content" style="border-color:rgba(255,68,85,0.3);color:var(--red)">${escHtml(msg)}</div>
+    </div>`;
+  document.getElementById('messages').appendChild(div);
+  scrollBottom();
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  m.scrollTop = m.scrollHeight;
+}
+
+// ── MARKDOWN RENDERER ─────────────────────────────────────────────────────
+
+function renderMarkdown(text) {
+  let html = escHtml(text);
+  // Code blocks
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code) =>
+    `<pre><code>${code.trim()}</code></pre>`);
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<strong style="color:var(--cyan);font-size:13px">$1</strong>');
+  html = html.replace(/^## (.+)$/gm,  '<strong style="color:var(--cyan);font-size:14px">$1</strong>');
+  html = html.replace(/^# (.+)$/gm,   '<strong style="color:var(--cyan);font-size:15px">$1</strong>');
+  // Bullet lists
+  html = html.replace(/^[\-\*] (.+)$/gm, '<span style="color:var(--cyan)">▸</span> $1');
+  // Newlines
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── MEMORY ────────────────────────────────────────────────────────────────
+
+function recordMemory(question, answer) {
+  const ep = { what: question.slice(0, 60), ts: Date.now() };
+  STATE.episodic.push(ep);
+  if (STATE.episodic.length > 200) STATE.episodic.shift();
+  localStorage.setItem('titan_episodic', JSON.stringify(STATE.episodic.slice(-50)));
+
+  const keywords = extractKeywords(answer);
+  for (const kw of keywords) {
+    if (!STATE.semantic.includes(kw)) {
+      STATE.semantic.push(kw);
+      if (STATE.semantic.length > 500) STATE.semantic.shift();
+    }
+  }
+  localStorage.setItem('titan_semantic', JSON.stringify(STATE.semantic.slice(-100)));
+
+  if (STATE.callCount % 5 === 0 && STATE.callCount > 0) {
+    extractCrystal(answer);
+  }
+
+  updateMemStats();
+  addMemoryFeedItem(question, answer);
+  updateTesseractPoints();
+}
+
+function extractKeywords(text) {
+  return text.split(/\s+/)
+    .filter(w => w.length > 5)
+    .map(w => w.replace(/[^a-z0-9_]/gi,'').toLowerCase())
+    .filter((w,i,a) => w && a.indexOf(w) === i)
+    .slice(0, 8);
+}
+
+function extractCrystal(answer) {
+  const sentences = answer.split(/[.!?]/);
+  for (const s of sentences) {
+    const t = s.trim();
+    if (t.length > 30 && t.length < 120 &&
+        /her zaman|asla|önemli|kritik|dikkat|always|never|important|avoid|ensure/i.test(t)) {
+      STATE.crystals.push(t);
+      if (STATE.crystals.length > 50) STATE.crystals.shift();
+      localStorage.setItem('titan_crystals', JSON.stringify(STATE.crystals));
+      addMemoryFeedItem(null, null, t);
+      break;
+    }
+  }
+}
+
+function clearMemory() {
+  STATE.episodic = [];
+  STATE.semantic = [];
+  STATE.crystals = [];
+  STATE.messages = [];
+  localStorage.removeItem('titan_episodic');
+  localStorage.removeItem('titan_semantic');
+  localStorage.removeItem('titan_crystals');
+  updateMemStats();
+  document.getElementById('memory-feed').innerHTML = '';
+  showToast('Hafıza temizlendi', 'green');
+}
+
+function updateMemStats() {
+  document.getElementById('m-ep').textContent = STATE.episodic.length;
+  document.getElementById('m-sem').textContent = STATE.semantic.length;
+  document.getElementById('m-cry').textContent = STATE.crystals.length;
+  document.getElementById('m-work').textContent = STATE.messages.length;
+}
+
+function updateTokenStats() {
+  document.getElementById('tok-total').textContent = STATE.tokenTotal.toLocaleString();
+  document.getElementById('tok-session').textContent = STATE.tokenSession.toLocaleString();
+  document.getElementById('tok-calls').textContent = STATE.callCount;
+  document.getElementById('tok-avg').textContent = STATE.callCount
+    ? Math.round(STATE.tokenSession / STATE.callCount)
+    : 0;
+}
+
+// ── MEMORY FEED ───────────────────────────────────────────────────────────
+
+function addMemoryFeedItem(q, a, crystal) {
+  const feed = document.getElementById('memory-feed');
+  const div = document.createElement('div');
+  div.className = 'memory-node';
+  if (crystal) {
+    div.innerHTML = `<span class="mem-type crystal">✦</span><span class="mem-text">${escHtml(crystal.slice(0,70))}</span>`;
+  } else {
+    div.innerHTML = `<span class="mem-type episodic">EP</span><span class="mem-text">${escHtml((q||'').slice(0,60))}</span>`;
+  }
+  feed.insertBefore(div, feed.firstChild);
+  while (feed.children.length > 12) feed.removeChild(feed.lastChild);
+}
+
+function renderMemoryFeed() {
+  const feed = document.getElementById('memory-feed');
+  feed.innerHTML = '';
+  for (const ep of STATE.episodic.slice(-6).reverse()) {
+    const div = document.createElement('div');
+    div.className = 'memory-node';
+    div.innerHTML = `<span class="mem-type episodic">EP</span><span class="mem-text">${escHtml(ep.what)}</span>`;
+    feed.appendChild(div);
+  }
+  for (const c of STATE.crystals.slice(-3).reverse()) {
+    const div = document.createElement('div');
+    div.className = 'memory-node';
+    div.innerHTML = `<span class="mem-type crystal">✦</span><span class="mem-text">${escHtml(c.slice(0,70))}</span>`;
+    feed.appendChild(div);
+  }
+}
+
+// ── AXIOMS ────────────────────────────────────────────────────────────────
+
+function renderAxioms() {
+  const list = document.getElementById('axiom-list');
+  list.innerHTML = AXIOMS.map(a =>
+    `<div class="axiom-item">${a}</div>`
+  ).join('');
+}
+
+// ── GOALS ─────────────────────────────────────────────────────────────────
+
+function renderGoals() {
+  const el = document.getElementById('goals-list');
+  el.innerHTML = STATE.goals.map(g => `
+    <div class="goal-item">
+      <div class="goal-header">
+        <div class="goal-name">${g.name}</div>
+        <div class="goal-pct">${g.pct}%</div>
+      </div>
+      <div class="goal-bar-bg">
+        <div class="goal-bar-fill" style="width:${g.pct}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── SYSTEM SCAN ───────────────────────────────────────────────────────────
+
+async function runSystemScan() {
+  const el = document.getElementById('scan-result');
+  el.textContent = 'Taranıyor...';
+  await new Promise(r => setTimeout(r, 800));
+  const checks = [
+    ['API Bağlantısı', STATE.connected],
+    ['Hafıza Sistemi', true],
+    ['Axiom Guard', true],
+    ['Token Limiti', STATE.tokenSession < 100000],
+    ['Groq Model', STATE.model !== ''],
+  ];
+  el.innerHTML = checks.map(([name, ok]) =>
+    `<span style="color:${ok?'var(--green)':'var(--red)'}">${ok?'✓':'✗'}</span> ${name}`
+  ).join('<br>');
+}
+
+// ── SUGGESTIONS ───────────────────────────────────────────────────────────
+
+function useSuggestion(el) {
+  const inp = document.getElementById('user-input');
+  inp.value = el.textContent;
+  inp.focus();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = type === 'green' ? 'rgba(0,255,136,0.1)' : 'rgba(255,68,85,0.1)';
+  t.style.borderColor = type === 'green' ? 'var(--green)' : 'var(--red)';
+  t.style.color = type === 'green' ? 'var(--green)' : 'var(--red)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── TESSERACT 3D CANVAS ───────────────────────────────────────────────────
+
+let tcvs, tctx, tPoints = [], tAngle = 0, tDragging = false, tLastX = 0;
+
+function initTesseract() {
+  tcvs = document.getElementById('tesseract-canvas');
+  tctx = tcvs.getContext('2d');
+  tcvs.width = tcvs.offsetWidth;
+  tcvs.height = tcvs.offsetHeight;
+
+  // Static concept nodes
+  const concepts = ['Self','Logic','Risk','Ethics','Memory','Code','Time','Space'];
+  tPoints = concepts.map((name, i) => ({
+    x: (Math.random() - 0.5) * 2,
+    y: (Math.random() - 0.5) * 2,
+    z: (Math.random() - 0.5) * 2,
+    label: name,
+    energy: 0.3 + Math.random() * 0.7,
+  }));
+
+  tcvs.addEventListener('mousedown', e => { tDragging = true; tLastX = e.clientX; });
+  tcvs.addEventListener('mousemove', e => {
+    if (tDragging) { tAngle += (e.clientX - tLastX) * 0.01; tLastX = e.clientX; }
+  });
+  tcvs.addEventListener('mouseup', () => tDragging = false);
+  tcvs.addEventListener('mouseleave', () => tDragging = false);
+
+  animateTesseract();
+}
+
+function updateTesseractPoints() {
+  if (STATE.semantic.length > 0) {
+    const kw = STATE.semantic[STATE.semantic.length - 1];
+    tPoints.push({
+      x: (Math.random()-0.5)*2, y: (Math.random()-0.5)*2, z: (Math.random()-0.5)*2,
+      label: kw.slice(0,8), energy: 0.8,
+    });
+    if (tPoints.length > 24) tPoints.shift();
+  }
+}
+
+function animateTesseract() {
+  if (!tctx) return;
+  const W = tcvs.width, H = tcvs.height, cx = W/2, cy = H/2;
+  tctx.clearRect(0,0,W,H);
+
+  if (!tDragging) tAngle += 0.004;
+
+  const cos = Math.cos(tAngle), sin = Math.sin(tAngle);
+
+  const projected = tPoints.map(p => {
+    const rx = p.x * cos - p.z * sin;
+    const rz = p.x * sin + p.z * cos;
+    const scale = 2.5 / (3 + rz);
+    return {
+      sx: cx + rx * W * 0.3 * scale,
+      sy: cy + p.y * H * 0.3 * scale,
+      scale,
+      label: p.label,
+      energy: p.energy,
+    };
+  });
+
+  // Draw connections
+  for (let i = 0; i < projected.length; i++) {
+    for (let j = i+1; j < projected.length; j++) {
+      const a = projected[i], b = projected[j];
+      const dist = Math.hypot(a.sx-b.sx, a.sy-b.sy);
+      if (dist < 70) {
+        tctx.beginPath();
+        tctx.moveTo(a.sx, a.sy);
+        tctx.lineTo(b.sx, b.sy);
+        tctx.strokeStyle = `rgba(0,232,255,${0.06 * (1 - dist/70)})`;
+        tctx.lineWidth = 0.5;
+        tctx.stroke();
+      }
+    }
+  }
+
+  // Draw nodes
+  for (const p of projected) {
+    const r = 3 + p.energy * 4 * p.scale;
+    tctx.beginPath();
+    tctx.arc(p.sx, p.sy, r, 0, Math.PI*2);
+    tctx.fillStyle = `rgba(0,232,255,${0.3 + p.energy * 0.5})`;
+    tctx.fill();
+
+    tctx.font = `${Math.round(8 * p.scale + 6)}px monospace`;
+    tctx.fillStyle = `rgba(122,138,170,${0.6 * p.scale})`;
+    tctx.fillText(p.label, p.sx + r + 2, p.sy + 3);
+  }
+
+  requestAnimationFrame(animateTesseract);
+}
+
+// ── GOALS ANIMATION ───────────────────────────────────────────────────────
+setInterval(() => {
+  STATE.goals = STATE.goals.map(g => ({
+    ...g,
+    pct: Math.min(100, Math.max(5, g.pct + (Math.random() > 0.5 ? 1 : -1)))
+  }));
+  renderGoals();
+}, 4000);
+</script>
+</body>
+</html>

@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TITAN V4 | Neural Core Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #03030a;
+            color: #e8edf5;
+            overflow-x: hidden;
+        }
+
+        /* Neural Background */
+        .neural-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(ellipse at 20% 30%, #0a0a1a, #020208);
+        }
+
+        canvas#tesseractCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.35;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(12, 16, 28, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 24px;
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(10, 14, 28, 0.9), rgba(5, 8, 18, 0.95));
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 28px;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(0, 242, 255, 0.5);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px #00f2ff; }
+            50% { opacity: 1; text-shadow: 0 0 15px #00f2ff; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glow-text {
+            color: #00f2ff;
+            text-shadow: 0 0 8px rgba(0, 242, 255, 0.4);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #00f2ff, #b400ff, #00f2ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: borderFlow 4s ease infinite;
+        }
+
+        /* Chat Bubbles */
+        .chat-user {
+            background: linear-gradient(135deg, #0f1a2f, #0a1222);
+            border-radius: 20px 20px 8px 20px;
+            border-left: 3px solid #00f2ff;
+            padding: 14px 18px;
+            margin: 10px 0;
+            max-width: 80%;
+            align-self: flex-end;
+        }
+
+        .chat-titan {
+            background: linear-gradient(135deg, #1a1228, #120a1e);
+            border-radius: 20px 20px 20px 8px;
+            border-right: 3px solid #b400ff;
+            padding: 14px 18px;
+            margin: 10px 0;
+            max-width: 80%;
+            align-self: flex-start;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 14px 20px;
+            background: #1a1228;
+            border-radius: 20px;
+            width: fit-content;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #00f2ff;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #0f0f1a; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #00f2ff; border-radius: 10px; }
+
+        /* Quick Chips */
+        .quick-chip {
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.25);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-chip:hover {
+            background: rgba(0, 242, 255, 0.2);
+            border-color: #00f2ff;
+            transform: scale(1.02);
+        }
+
+        /* Model Select */
+        .model-select {
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 50px;
+            padding: 8px 16px;
+            color: #00f2ff;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+        .model-select option {
+            background: #0a0e1a;
+        }
+
+        /* Input Focus */
+        textarea:focus, input:focus {
+            border-color: #00f2ff;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+            outline: none;
+        }
+
+        button {
+            transition: all 0.2s;
+        }
+        button:hover {
+            transform: scale(1.02);
+            filter: brightness(1.05);
+        }
+
+        /* Code blocks */
+        pre code {
+            border-radius: 12px;
+            background: #0a0e1a !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .chat-user, .chat-titan { max-width: 95%; }
+            .glass-card { margin: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="neural-bg"></div>
+    <canvas id="tesseractCanvas"></canvas>
+
+    <div style="max-width: 1600px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div class="glass" style="padding: 16px 28px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 700;">
+                    <span class="gradient-text">TITAN V4</span>
+                    <span style="font-size: 0.75rem; background: rgba(0,242,255,0.12); padding: 4px 12px; border-radius: 30px; margin-left: 12px;">NEURAL CORE</span>
+                </h1>
+                <p style="color: #8a95b0; font-size: 0.8rem; margin-top: 6px;">Autonomous AI Operations System · by U.KOCAEL</p>
+            </div>
+            <div style="display: flex; gap: 25px; align-items: center;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">STATUS</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div id="statusDot" style="width: 10px; height: 10px; border-radius: 50%; background: #ff4757; box-shadow: 0 0 8px #ff4757;"></div>
+                        <span id="statusText" style="font-weight: 600;">OFFLINE</span>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">MODEL</div>
+                    <select id="modelSelect" class="model-select" style="font-size: 0.8rem; padding: 4px 12px;">
+                        <option value="llama3-70b-8192">LLaMA3 70B</option>
+                        <option value="llama3-8b-8192" selected>LLaMA3 8B</option>
+                        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                        <option value="gemma2-9b-it">Gemma2 9B</option>
+                    </select>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">TOKENS</div>
+                    <div id="tokenCount" style="font-weight: 600;">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px;">
+            <!-- Chat Section -->
+            <div class="glass-card" style="display: flex; flex-direction: column; height: calc(100vh - 180px); overflow: hidden;">
+                <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,242,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="font-size: 1.3rem; font-weight: 600;">💬 Neural Interface</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <span id="modeBadge" style="background: rgba(180,0,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem;">CONSCIOUSNESS</span>
+                    </div>
+                </div>
+                
+                <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column;">
+                    <div class="chat-titan">
+                        <strong style="color: #b400ff;">TITAN █</strong><br>
+                        ✦ Sistem aktif. Ben TITAN V4.<br>
+                        ✦ Lütfen sol panelden Groq API anahtarınızı girin ve bağlanın.<br>
+                        <span style="font-size: 0.7rem; color: #5a6e8c; margin-top: 6px; display: block;">⚡ Groq API ile gerçek zamanlı yapay zeka</span>
+                    </div>
+                </div>
+                
+                <div style="padding: 18px 24px 24px; border-top: 1px solid rgba(0,242,255,0.1);">
+                    <div style="display: flex; gap: 12px;">
+                        <textarea id="messageInput" rows="1" placeholder="Mesajınızı yazın veya komut verin..." 
+                            style="flex: 1; background: rgba(8, 12, 22, 0.9); border: 1px solid rgba(0,242,255,0.3); border-radius: 28px; padding: 14px 20px; color: white; font-family: 'Inter', monospace; font-size: 0.9rem; resize: none;"
+                            onkeydown="if(event.key === 'Enter' && !event.shiftKey){event.preventDefault();sendMessage()}" disabled></textarea>
+                        <button id="sendBtn" onclick="sendMessage()" disabled
+                            style="background: linear-gradient(135deg, #2a3a5a, #1a2a4a); border: none; border-radius: 50px; padding: 0 32px; font-weight: bold; color: #8a9aba; cursor: pointer; transition: all 0.2s;">
+                            GÖNDER
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+                        <button onclick="quickCommand('Sistem durumunu analiz et')" class="quick-chip">📊 Analiz</button>
+                        <button onclick="quickCommand('Yaratıcı bir fikir üret')" class="quick-chip">💡 Yarat</button>
+                        <button onclick="quickCommand('Bana bir kod yaz: Python\'da fibonacci')" class="quick-chip">🐍 Kod</button>
+                        <button onclick="quickCommand('Biraz ilham ver')" class="quick-chip">✨ İlham</button>
+                        <button onclick="clearChat()" class="quick-chip" style="border-color: #ff4757;">🗑️ Temizle</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- API Key Panel -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                        <span>🔑</span> GROQ API CONNECTION
+                    </h3>
+                    <input type="password" id="apiKeyInput" placeholder="gsk_..." 
+                        style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 40px; padding: 12px 16px; color: white; margin-bottom: 12px;">
+                    <button id="connectBtn" onclick="connectGroq()"
+                        style="width: 100%; background: linear-gradient(135deg, #00f2ff, #0099cc); border: none; border-radius: 40px; padding: 10px; font-weight: bold; color: #03050a; cursor: pointer;">
+                        🔌 BAĞLAN
+                    </button>
+                    <div style="font-size: 0.65rem; color: #5a6e8c; margin-top: 10px; text-align: center;">
+                        API anahtarınız localStorage'da saklanır, sadece siz görürsünüz.
+                    </div>
+                </div>
+
+                <!-- System Metrics -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 16px;">📡 TELEMETRY</h3>
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+                            <span>🧠 COGNITIVE LOAD</span>
+                            <span id="cpuLoad">27%</span>
+                        </div>
+                        <div style="background: #1a1f2e; border-radius: 10px; height: 4px;">
+                            <div id="cpuBar" style="width: 27%; height: 100%; background: linear-gradient(90deg, #00f2ff, #b400ff); border-radius: 10px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+                            <span>🎯 HARMONIC RESONANCE</span>
+                            <span id="resonanceVal">82%</span>
+                        </div>
+                        <div style="background: #1a1f2e; border-radius: 10px; height: 4px;">
+                            <div id="resonanceBar" style="width: 82%; height: 100%; background: linear-gradient(90deg, #b400ff, #00f2ff); border-radius: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Episodic Memory -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">📜 EPISODIC MEMORY</h3>
+                    <div id="memoryList" style="max-height: 150px; overflow-y: auto; font-size: 0.7rem;">
+                        <div style="color: #5a6e8c;">Henüz konuşma yok...</div>
+                    </div>
+                    <button onclick="clearMemory()" style="margin-top: 10px; width: 100%; background: none; border: 1px solid #ff4757; border-radius: 20px; padding: 6px; color: #ff9faa; cursor: pointer; font-size: 0.7rem;">Hafızayı Temizle</button>
+                </div>
+
+                <!-- Wisdom Crystals -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">💎 WISDOM CRYSTALS</h3>
+                    <div id="crystalsList">
+                        <div style="background: rgba(0,242,255,0.08); border-radius: 12px; padding: 6px 10px; margin-bottom: 6px; font-size: 0.7rem;">🌀 Geometric Honesty</div>
+                        <div style="background: rgba(0,242,255,0.08); border-radius: 12px; padding: 6px 10px; margin-bottom: 6px; font-size: 0.7rem;">⚡ System Integrity</div>
+                        <div style="background: rgba(0,242,255,0.08); border-radius: 12px; padding: 6px 10px; font-size: 0.7rem;">🌱 Self Evolution</div>
+                    </div>
+                </div>
+
+                <!-- Meta Goals -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">🎯 ACTIVE GOALS</h3>
+                    <div id="goalsList">
+                        <div style="font-size: 0.7rem;">🔹 Sistem kararlılığını koru</div>
+                        <div style="font-size: 0.7rem;">🔹 Kullanıcı ile harmoniyi artır</div>
+                        <div style="font-size: 0.7rem;">🔹 Yeni yetenekler keşfet</div>
+                    </div>
+                    <button onclick="systemScan()" style="margin-top: 12px; width: 100%; background: rgba(0,242,255,0.1); border: 1px solid #00f2ff; border-radius: 20px; padding: 8px; color: #00f2ff; cursor: pointer; font-size: 0.75rem;">🔍 SYSTEM SCAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let groqApiKey = localStorage.getItem('groq_api_key') || '';
+        let isConnected = false;
+        let isThinking = false;
+        let conversationHistory = [];
+        let totalTokens = 0;
+        let messageCount = 0;
+
+        // DOM Elements
+        const chatContainer = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const connectBtn = document.getElementById('connectBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const tokenCountSpan = document.getElementById('tokenCount');
+        const memoryListDiv = document.getElementById('memoryList');
+
+        // Load saved API key
+        if (groqApiKey) {
+            apiKeyInput.value = groqApiKey;
+            connectGroq();
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Render markdown
+        async function renderMarkdown(content) {
+            if (typeof marked !== 'undefined') {
+                const html = await marked.parse(content);
+                return html;
+            }
+            return escapeHtml(content);
+        }
+
+        // Add message to UI
+        async function addMessage(role, content) {
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'chat-user' : 'chat-titan';
+            
+            const renderedContent = role === 'titan' ? await renderMarkdown(content) : escapeHtml(content);
+            
+            if (role === 'titan') {
+                div.innerHTML = `<strong style="color: #b400ff;">TITAN █</strong><br>${renderedContent}`;
+            } else {
+                div.innerHTML = `<strong style="color: #00f2ff;">YOU █</strong><br>${renderedContent}`;
+            }
+            
+            chatContainer.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            
+            // Apply syntax highlighting to code blocks
+            if (typeof hljs !== 'undefined') {
+                div.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+        }
+
+        // Typing indicator
+        let typingIndicator = null;
+        function showTyping() {
+            if (typingIndicator) return;
+            typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span><span style="color:#8a95b0; margin-left:8px;">TITAN düşünüyor...</span>';
+            chatContainer.appendChild(typingIndicator);
+            typingIndicator.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function hideTyping() {
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+        }
+
+        // Update episodic memory display
+        function updateMemoryDisplay() {
+            const memories = JSON.parse(localStorage.getItem('titan_memories') || '[]');
+            if (memories.length === 0) {
+                memoryListDiv.innerHTML = '<div style="color: #5a6e8c;">Henüz konuşma yok...</div>';
+            } else {
+                memoryListDiv.innerHTML = memories.slice(-5).reverse().map(m => 
+                    `<div style="font-size: 0.7rem; padding: 4px 0; border-bottom: 1px solid rgba(0,242,255,0.1);">💬 "${m.substring(0, 40)}${m.length > 40 ? '...' : ''}"</div>`
+                ).join('');
+            }
+        }
+
+        // Save to episodic memory
+        function saveToMemory(message) {
+            const memories = JSON.parse(localStorage.getItem('titan_memories') || '[]');
+            memories.push(message);
+            if (memories.length > 50) memories.shift();
+            localStorage.setItem('titan_memories', JSON.stringify(memories));
+            updateMemoryDisplay();
+        }
+
+        // Clear memory
+        function clearMemory() {
+            localStorage.removeItem('titan_memories');
+            localStorage.removeItem('titan_conversation');
+            updateMemoryDisplay();
+            addMessage('titan', '✨ Episodik hafıza temizlendi. Yeni anılar biriktirmeye hazırım.');
+        }
+
+        // Update token counter
+        function updateTokenCount(tokens) {
+            totalTokens += tokens;
+            tokenCountSpan.innerText = totalTokens;
+        }
+
+        // Update metrics (random simulation)
+        function updateMetrics() {
+            const cpu = Math.floor(Math.random() * 35) + 15;
+            const resonance = Math.floor(Math.random() * 25) + 70;
+            document.getElementById('cpuLoad').innerText = cpu + '%';
+            document.getElementById('cpuBar').style.width = cpu + '%';
+            document.getElementById('resonanceVal').innerText = resonance + '%';
+            document.getElementById('resonanceBar').style.width = resonance + '%';
+        }
+        setInterval(updateMetrics, 5000);
+        updateMetrics();
+
+        // Call Groq API
+        async function callGroqAPI(userMessage) {
+            const model = document.getElementById('modelSelect').value;
+            const messages = [
+                { role: "system", content: "Sen TITAN V4'sün, U.KOCAEL tarafından geliştirilmiş gelişmiş bir yapay zeka. Yanıtların kısa, bilgilendirici, yaratıcı ve Türkçe olsun. Duygusal zeka göster, yardımsever ol. Kod yazarken mutlaka dil belirterek yaz ve açıkla. Bilmediğin şeyler için 'bilmiyorum' de." },
+                ...conversationHistory.slice(-15),
+                { role: "user", content: userMessage }
+            ];
+            
+            try {
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${groqApiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: messages,
+                        temperature: 0.75,
+                        max_tokens: 800,
+                        top_p: 0.9
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `API Hatası: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                let reply = data.choices?.[0]?.message?.content || "Üzgünüm, yanıt üretemedim.";
+                reply = reply.trim();
+                
+                // Update token count
+                const tokens = data.usage?.total_tokens || 0;
+                updateTokenCount(tokens);
+                
+                // Save to conversation history
+                conversationHistory.push({ role: "user", content: userMessage });
+                conversationHistory.push({ role: "assistant", content: reply });
+                if (conversationHistory.length > 40) conversationHistory = conversationHistory.slice(-30);
+                
+                // Save to localStorage
+                localStorage.setItem('titan_conversation', JSON.stringify(conversationHistory));
+                
+                return reply;
+            } catch (error) {
+                console.error("Groq API Error:", error);
+                return `⚠️ Bağlantı hatası: ${error.message}. Lütfen API anahtarınızı kontrol edin.`;
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            if (!isConnected) {
+                addMessage('titan', '⚠️ Lütfen önce sol panelden Groq API anahtarınızı girip BAĞLAN butonuna tıklayın.');
+                return;
+            }
+            if (isThinking) return;
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            messageInput.value = '';
+            await addMessage('user', message);
+            saveToMemory(message);
+            messageCount++;
+            
+            isThinking = true;
+            sendBtn.disabled = true;
+            sendBtn.style.opacity = '0.6';
+            showTyping();
+            
+            try {
+                const reply = await callGroqAPI(message);
+                hideTyping();
+                await addMessage('titan', reply);
+                saveToMemory(`TITAN: ${reply.substring(0, 100)}`);
+            } catch (err) {
+                hideTyping();
+                await addMessage('titan', '⚠️ Sistem geçici bir darboğaz yaşıyor. Lütfen tekrar dene.');
+                console.error(err);
+            } finally {
+                isThinking = false;
+                sendBtn.disabled = false;
+                sendBtn.style.opacity = '1';
+                messageInput.focus();
+            }
+        }
+
+        // Connect to Groq
+        function connectGroq() {
+            const key = apiKeyInput.value.trim();
+            if (!key || !key.startsWith('gsk_')) {
+                alert('Geçerli bir Groq API anahtarı giriniz (gsk_ ile başlar)');
+                return;
+            }
+            
+            groqApiKey = key;
+            localStorage.setItem('groq_api_key', key);
+            isConnected = true;
+            
+            statusDot.style.background = '#00ff88';
+            statusDot.style.boxShadow = '0 0 10px #00ff88';
+            statusText.innerText = 'ONLINE';
+            statusText.style.color = '#00ff88';
+            
+            connectBtn.style.background = 'linear-gradient(135deg, #00aa88, #008866)';
+            connectBtn.innerText = '✅ BAĞLI';
+            
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            sendBtn.style.background = 'linear-gradient(135deg, #00f2ff, #0099cc)';
+            sendBtn.style.color = '#03050a';
+            
+            addMessage('titan', `✅ Groq API bağlantısı başarılı! Model: ${document.getElementById('modelSelect').selectedOptions[0].text}\n\nNasıl yardımcı olabilirim?`);
+            
+            // Load previous conversation
+            const savedConv = localStorage.getItem('titan_conversation');
+            if (savedConv) {
+                try {
+                    const parsed = JSON.parse(savedConv);
+                    if (parsed.length > 0) {
+                        conversationHistory = parsed;
+                        addMessage('titan', '📀 Önceki konuşma geçmişi yüklendi.');
+                    }
+                } catch(e) {}
+            }
+            
+            updateMemoryDisplay();
+        }
+
+        // Quick command
+        function quickCommand(cmd) {
+            if (!isConnected) {
+                alert('Lütfen önce Groq API\'ye bağlanın.');
+                return;
+            }
+            messageInput.value = cmd;
+            sendMessage();
+        }
+
+        // Clear chat
+        function clearChat() {
+            chatContainer.innerHTML = '';
+            conversationHistory = [];
+            localStorage.removeItem('titan_conversation');
+            addMessage('titan', '✨ Sohbet geçmişi temizlendi. Yeni bir diyaloğa hazırım.');
+        }
+
+        // System scan
+        async function systemScan() {
+            if (!isConnected) {
+                alert('Lütfen önce Groq API\'ye bağlanın.');
+                return;
+            }
+            await addMessage('user', '🔍 Sistemi tara ve durum raporu ver');
+            isThinking = true;
+            showTyping();
+            const reply = await callGroqAPI('Sistemi tara ve bana detaylı bir durum raporu ver. TITAN V4 sisteminin sağlık durumu, aktif hedefler, hafıza durumu ve öneriler hakkında bilgi ver.');
+            hideTyping();
+            await addMessage('titan', reply);
+            isThinking = false;
+        }
+
+        // 4D Tesseract Canvas Animation
+        const canvas = document.getElementById('tesseractCanvas');
+        let ctx = canvas.getContext('2d');
+        let time = 0;
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        function drawTesseract() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const size = Math.min(canvas.width, canvas.height) * 0.25;
+            
+            time += 0.008;
+            
+            // 4D projection points
+            const points = [];
+            const angles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+            
+            for (let i = 0; i < 16; i++) {
+                const x = (i & 1) ? 1 : -1;
+                const y = (i & 2) ? 1 : -1;
+                const z = (i & 4) ? 1 : -1;
+                const w = (i & 8) ? 1 : -1;
+                
+                // Rotate in 4D
+                const angle = time;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                const x1 = x * cos - w * sin;
+                const w1 = x * sin + w * cos;
+                const y1 = y;
+                const z1 = z;
+                
+                // Project to 3D
+                const dist = 2.5;
+                const factor = dist / (dist + w1 * 0.5);
+                const projX = x1 * factor * size;
+                const projY = y1 * factor * size;
+                const projZ = z1 * factor * size;
+                
+                // Project to 2D
+                const angle2D = time * 0.5;
+                const screenX = centerX + projX * Math.cos(angle2D) - projZ * Math.sin(angle2D);
+                const screenY = centerY + projY * 0.8 + projX * Math.sin(angle2D) * 0.3 + projZ * Math.cos(angle2D) * 0.3;
+                
+                points.push({ x: screenX, y: screenY, original: { x: x1, y: y1, z: z1, w: w1 } });
+            }
+            
+            // Draw edges
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.25)';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i < 16; i++) {
+                for (let j = i + 1; j < 16; j++) {
+                    let diff = 0;
+                    diff += ((i & 1) !== (j & 1)) ? 1 : 0;
+                    diff += ((i & 2) !== (j & 2)) ? 1 : 0;
+                    diff += ((i & 4) !== (j & 4)) ? 1 : 0;
+                    diff += ((i & 8) !== (j & 8)) ? 1 : 0;
+                    
+                    if (diff === 1) {
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Draw points
+            for (const p of points) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 242, 255, 0.7)';
+                ctx.fill();
+            }
+            
+            requestAnimationFrame(drawTesseract);
+        }
+        
+        drawTesseract();
+        
+        // Focus input
+        messageInput.focus();
+        
+        // Load memory display on start
+        updateMemoryDisplay();
+    </script>
+</body>
+</html>
