@@ -1,0 +1,29 @@
+# services/operator/config.yaml
+mode: operator
+server:
+  host: "0.0.0.0"
+  port: 9001
+gateway:
+  url: "http://localhost:9000"
+redis:
+  url: "redis://localhost:6379"
+
+collectors:
+  linux: true
+  android: false
+  windows: false
+  macos: false
+
+predictive:
+  window_seconds: 600
+  alert_threshold: 10
+
+healer:
+  auto_approve_safe: true
+  conditional_timeout: 30
+
+memory:
+  path: "./operator_memory"
+
+slack:
+  webhook_url: ""  # Gerçek URL girilecek

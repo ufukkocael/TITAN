@@ -1,0 +1,26 @@
+# services/companion/config.yaml
+mode: companion
+server:
+  host: "0.0.0.0"
+  port: 9004
+
+gateway:
+  url: "http://localhost:9000"
+companion:
+  name: "TITAN"
+  llm:
+    provider: "groq"           # "groq" veya "ollama"
+    groq_api_key: "gsk_KktFAFwJixZgc"
+    groq_model: "llama3-8b-8192"
+    ollama_url: "http://localhost:11434"
+    ollama_model: "llama3.2:3b"
+
+voice:
+  language: "tr"
+  wake_word: "titan"
+  stt_model: "google"
+  tts_speed: 150
+
+ui:
+  theme: "dark"
+  show_avatar: true
