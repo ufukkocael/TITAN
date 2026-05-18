@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: titan-config
+  namespace: titan-v4
+data:
+  config.yaml: |
+    redis:
+      host: "redis-service"
+      port: 6379
+    logging:
+      level: "INFO"

@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-companion
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: titan-companion
+    spec:
+      containers:
+      - name: companion
+        image: titan-v4-companion:latest
+        ports:
+        - containerPort: 9004

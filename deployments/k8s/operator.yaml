@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-operator
+  namespace: titan-v4
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-operator
+  template:
+    metadata:
+      labels:
+        app: titan-operator
+    spec:
+      containers:
+      - name: operator
+        image: titan-operator:latest
+        ports:
+        - containerPort: 9001

@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-researcher
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: titan-researcher
+    spec:
+      containers:
+      - name: researcher
+        image: titan-v4-researcher:latest
+        ports:
+        - containerPort: 9003

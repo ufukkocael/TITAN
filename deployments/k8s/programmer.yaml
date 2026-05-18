@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-programmer
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: titan-programmer
+    spec:
+      containers:
+      - name: programmer
+        image: titan-v4-programmer:latest
+        ports:
+        - containerPort: 9002
