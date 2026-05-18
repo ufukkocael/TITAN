@@ -1,0 +1,51 @@
+from typing import Dict, List, Optional
+import numpy as np
+from enum import Enum
+
+class ReasoningStrategy(Enum):
+    CHAIN = "chain"
+    TREE = "tree"
+    GRAPH = "graph"
+    ANALOGY = "analogy"
+    ABDUCTION = "abduction"
+
+class ReasoningStep:
+    def __init__(self, thought: str, confidence: float = 0.5):
+        self.thought = thought
+        self.confidence = confidence
+
+class ReasoningEngine:
+    """TITAN'ın düşünme motoru."""
+
+    def __init__(self, evaluator=None):
+        self.reasoning_history: List[Dict] = []
+        self.evaluator = evaluator if evaluator else lambda x, y: (x, y)
+
+    def _generate_thought(self, previous_thought: str, problem: str) -> str:
+        """Prepares a new thought based on the previous one."""
+        return f"{previous_thought} - {problem}" if previous_thought else problem
+
+    def chain_of_thought(self, problem: str, steps: int = 5, action_vec: Optional[np.ndarray] = None) -> List[ReasoningStep]:
+        """Problemi adım adım düşün, etik denetim ekle."""
+        result = []
+
+        for _ in range(steps):
+            thought = self._generate_thought(result[-1]['thought'] if result else '', problem)
+            confidence = 0.9
+            evidence = []
+
+            if action_vec and self.evaluator:
+                eval_result = self.evaluator.evaluate(action_vec, problem)
+                ethics_thought = eval_result['feedback']
+                confidence += eval_result['total_score']
+                evidence.append(ethics_thought)
+
+            result.append({'thought': thought, 'confidence': confidence})
+
+        return [ReasoningStep(step['thought'], step['confidence']) for step in result]
+
+# Example usage:
+engine = ReasoningEngine()
+result = engine.chain_of_thought("How to reach the goal?", 5)
+for i, step in enumerate(result):
+    print(f"Step {i+1}: {step.thought} (Confidence: {step.confidence})")
