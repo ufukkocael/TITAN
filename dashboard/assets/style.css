@@ -1,0 +1,23 @@
+.metric-card {
+    background: #1a1f2e;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 4px;
+}
+.alert-critical {
+    background: #4a1111;
+    border-left: 4px solid #ff4444;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+.alert-warning {
+    background: #4a3a11;
+    border-left: 4px solid #ffaa00;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+.log-fatal { color: #ff4444; }
+.log-warn { color: #ffaa00; }
+.log-info { color: #88ccff; }

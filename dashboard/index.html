@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TITAN V4 | Full Stack Neural Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #03030a;
+            color: #e8edf5;
+            overflow-x: hidden;
+        }
+
+        /* Neural Background */
+        .neural-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(ellipse at 20% 30%, #0a0a1a, #020208);
+        }
+
+        canvas#tesseractCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(12, 16, 28, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 24px;
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(10, 14, 28, 0.9), rgba(5, 8, 18, 0.95));
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 28px;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(0, 242, 255, 0.5);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px #00f2ff; }
+            50% { opacity: 1; text-shadow: 0 0 15px #00f2ff; }
+        }
+
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glow-text {
+            color: #00f2ff;
+            text-shadow: 0 0 8px rgba(0, 242, 255, 0.4);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #00f2ff, #b400ff, #00f2ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: borderFlow 4s ease infinite;
+        }
+
+        /* Chat Bubbles */
+        .chat-user {
+            background: linear-gradient(135deg, #0f1a2f, #0a1222);
+            border-radius: 20px 20px 8px 20px;
+            border-left: 3px solid #00f2ff;
+            padding: 14px 18px;
+            margin: 10px 0;
+            max-width: 80%;
+            align-self: flex-end;
+        }
+
+        .chat-titan {
+            background: linear-gradient(135deg, #1a1228, #120a1e);
+            border-radius: 20px 20px 20px 8px;
+            border-right: 3px solid #b400ff;
+            padding: 14px 18px;
+            margin: 10px 0;
+            max-width: 80%;
+            align-self: flex-start;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 14px 20px;
+            background: #1a1228;
+            border-radius: 20px;
+            width: fit-content;
+        }
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #00f2ff;
+            border-radius: 50%;
+            animation: pulse 1.2s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #0f0f1a; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #00f2ff; border-radius: 10px; }
+
+        /* Quick Chips */
+        .quick-chip {
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.25);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-chip:hover {
+            background: rgba(0, 242, 255, 0.2);
+            border-color: #00f2ff;
+            transform: scale(1.02);
+        }
+
+        /* Model Select */
+        .model-select, .provider-select {
+            background: rgba(0, 242, 255, 0.08);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 50px;
+            padding: 8px 16px;
+            color: #00f2ff;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+        }
+        .model-select option, .provider-select option {
+            background: #0a0e1a;
+        }
+
+        textarea:focus, input:focus {
+            border-color: #00f2ff;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+            outline: none;
+        }
+
+        button {
+            transition: all 0.2s;
+        }
+        button:hover {
+            transform: scale(1.02);
+            filter: brightness(1.05);
+        }
+
+        .service-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .service-online { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .service-offline { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .chat-user, .chat-titan { max-width: 95%; }
+            .glass-card { margin: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="neural-bg"></div>
+    <canvas id="tesseractCanvas"></canvas>
+
+    <div style="max-width: 1600px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div class="glass" style="padding: 16px 28px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h1 style="font-size: 1.8rem; font-weight: 700;">
+                    <span class="gradient-text">TITAN V4</span>
+                    <span style="font-size: 0.75rem; background: rgba(0,242,255,0.12); padding: 4px 12px; border-radius: 30px; margin-left: 12px;">FULL STACK</span>
+                </h1>
+                <p style="color: #8a95b0; font-size: 0.8rem; margin-top: 6px;">Autonomous AI Operations System · by U.KOCAEL</p>
+            </div>
+            <div style="display: flex; gap: 25px; align-items: center; flex-wrap: wrap;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">GATEWAY</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div id="gatewayDot" style="width: 10px; height: 10px; border-radius: 50%; background: #ff4757;"></div>
+                        <span id="gatewayStatus" style="font-weight: 600;">BAĞLANIYOR</span>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">WEBSOCKET</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div id="wsDot" style="width: 10px; height: 10px; border-radius: 50%; background: #ff4757;"></div>
+                        <span id="wsStatus" style="font-weight: 600;">KAPALI</span>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.7rem; color: #6c7a9e;">LLM</div>
+                    <select id="providerSelect" class="provider-select" style="font-size: 0.7rem; padding: 4px 8px;">
+                        <option value="ollama">🦙 Ollama (Yerel)</option>
+                        <option value="groq">⚡ Groq (Cloud)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 320px; gap: 24px;">
+            <!-- Chat Section -->
+            <div class="glass-card" style="display: flex; flex-direction: column; height: calc(100vh - 180px); overflow: hidden;">
+                <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,242,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="font-size: 1.3rem; font-weight: 600;">💬 Neural Interface</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <span id="modeBadge" style="background: rgba(180,0,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem;">CONSCIOUSNESS</span>
+                        <span id="llmBadge" style="background: rgba(0,242,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem;">🦙 Ollama</span>
+                    </div>
+                </div>
+
+                <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column;">
+                    <div class="chat-titan">
+                        <strong style="color: #b400ff;">TITAN █</strong><br>
+                        ✦ TITAN V4 Full Stack aktif.<br>
+                        ✦ API Gateway: <span id="headerGatewayStatus">Bağlanıyor...</span><br>
+                        ✦ Lütfen sol panelden API anahtarınızı girin (Groq için) veya Ollama'yı başlatın.<br>
+                        <span style="font-size: 0.7rem; color: #5a6e8c; margin-top: 6px; display: block;">⚡ Tüm servisler entegre | Gerçek zamanlı WebSocket</span>
+                    </div>
+                </div>
+
+                <div style="padding: 18px 24px 24px; border-top: 1px solid rgba(0,242,255,0.1);">
+                    <div style="display: flex; gap: 12px;">
+                        <textarea id="messageInput" rows="1" placeholder="Mesajınızı yazın veya komut verin..."
+                            style="flex: 1; background: rgba(8, 12, 22, 0.9); border: 1px solid rgba(0,242,255,0.3); border-radius: 28px; padding: 14px 20px; color: white; font-family: 'Inter', monospace; font-size: 0.9rem; resize: none;"
+                            onkeydown="if(event.key === 'Enter' && !event.shiftKey){event.preventDefault();sendMessage()}" disabled></textarea>
+                        <button id="sendBtn" onclick="sendMessage()" disabled
+                            style="background: linear-gradient(135deg, #2a3a5a, #1a2a4a); border: none; border-radius: 50px; padding: 0 32px; font-weight: bold; color: #8a9aba; cursor: pointer;">
+                            GÖNDER
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+                        <button onclick="quickCommand('Sistem durumunu analiz et')" class="quick-chip">📊 Analiz</button>
+                        <button onclick="quickCommand('Yaratıcı bir fikir üret')" class="quick-chip">💡 Yarat</button>
+                        <button onclick="quickCommand('Bana bir kod yaz: Python\'da fibonacci')" class="quick-chip">🐍 Kod</button>
+                        <button onclick="getServiceHealth()" class="quick-chip">🩺 Servis Sağlığı</button>
+                        <button onclick="clearChat()" class="quick-chip" style="border-color: #ff4757;">🗑️ Temizle</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Auth Panel -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                        <span>🔐</span> AUTHENTICATION
+                    </h3>
+                    <input type="text" id="usernameInput" placeholder="Kullanıcı Adı" value="admin"
+                        style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 40px; padding: 10px 16px; color: white; margin-bottom: 8px;">
+                    <input type="password" id="passwordInput" placeholder="Şifre" value="titan2026"
+                        style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 40px; padding: 10px 16px; color: white; margin-bottom: 12px;">
+                    <button id="loginBtn" onclick="login()"
+                        style="width: 100%; background: linear-gradient(135deg, #00f2ff, #0099cc); border: none; border-radius: 40px; padding: 10px; font-weight: bold; color: #03050a; cursor: pointer;">
+                        🔑 LOGIN & BAĞLAN
+                    </button>
+                    <div id="tokenStatus" style="font-size: 0.65rem; color: #5a6e8c; margin-top: 10px; text-align: center;">
+                        Token alınmadı
+                    </div>
+                </div>
+
+                <!-- API Key Panel (Groq için) -->
+                <div class="glass-card" id="apiKeyPanel" style="padding: 20px; display: none;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 14px;">⚡ GROQ API KEY</h3>
+                    <input type="password" id="groqApiKeyInput" placeholder="gsk_..."
+                        style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(0,242,255,0.3); border-radius: 40px; padding: 12px 16px; color: white;">
+                    <button onclick="saveGroqKey()" style="margin-top: 8px; width: 100%; background: rgba(0,242,255,0.1); border: 1px solid #00f2ff; border-radius: 40px; padding: 8px; color: #00f2ff; cursor: pointer;">💾 Kaydet</button>
+                </div>
+
+                <!-- Service Status -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 14px;">📡 SERVICE STATUS</h3>
+                    <div id="serviceStatus">
+                        <div>🟡 Gateway: <span id="svc_gateway">Kontrol ediliyor...</span></div>
+                        <div>🟡 Operator: <span id="svc_operator">-</span></div>
+                        <div>🟡 Programmer: <span id="svc_programmer">-</span></div>
+                        <div>🟡 Researcher: <span id="svc_researcher">-</span></div>
+                        <div>🟡 Companion: <span id="svc_companion">-</span></div>
+                        <div>🟡 Orchestrator: <span id="svc_orchestrator">-</span></div>
+                    </div>
+                    <button onclick="checkAllServices()" style="margin-top: 12px; width: 100%; background: rgba(0,242,255,0.1); border: 1px solid #00f2ff; border-radius: 20px; padding: 6px; color: #00f2ff; cursor: pointer; font-size: 0.7rem;">🔄 TARA</button>
+                </div>
+
+                <!-- Log Stream (WebSocket) -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">📜 LIVE LOG STREAM</h3>
+                    <div id="logStream" style="max-height: 150px; overflow-y: auto; font-size: 0.7rem; font-family: monospace;">
+                        <div style="color: #5a6e8c;">WebSocket bağlantısı bekleniyor...</div>
+                    </div>
+                </div>
+
+                <!-- System Metrics -->
+                <div class="glass-card" style="padding: 20px;">
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 16px;">📊 TELEMETRY</h3>
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+                            <span>🧠 COGNITIVE LOAD</span>
+                            <span id="cpuLoad">27%</span>
+                        </div>
+                        <div style="background: #1a1f2e; border-radius: 10px; height: 4px;">
+                            <div id="cpuBar" style="width: 27%; height: 100%; background: linear-gradient(90deg, #00f2ff, #b400ff); border-radius: 10px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+                            <span>🎯 HARMONIC RESONANCE</span>
+                            <span id="resonanceVal">82%</span>
+                        </div>
+                        <div style="background: #1a1f2e; border-radius: 10px; height: 4px;">
+                            <div id="resonanceBar" style="width: 82%; height: 100%; background: linear-gradient(90deg, #b400ff, #00f2ff); border-radius: 10px;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+                            <span>💾 TOKEN COUNT</span>
+                            <span id="tokenCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // TITAN V4 FULL STACK WEB INTERFACE
+        // Bağlantılar: Gateway (9000), WebSocket, Ollama, Groq
+        // ============================================================
+
+        // Configuration
+        let _authToken = null;
+        try { _authToken = localStorage.getItem('titan_token'); } catch(e) { console.error('Storage blocked'); }
+        let authToken = _authToken;
+
+        let _groqKey = '';
+        try { _groqKey = localStorage.getItem('groq_api_key') || ''; } catch(e) {}
+        let groqApiKey = _groqKey;
+
+        let ws = null;
+        let isConnected = false;
+        let isThinking = false;
+        let conversationHistory = [];
+        let totalTokens = 0;
+        let serviceStatus = {
+            gateway: false, operator: false, programmer: false,
+            researcher: false, companion: false, orchestrator: false
+        };
+
+        // DOM Elements
+        const chatContainer = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const usernameInput = document.getElementById('usernameInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const gatewayDot = document.getElementById('gatewayDot');
+        const gatewayStatus = document.getElementById('gatewayStatus');
+        const wsDot = document.getElementById('wsDot');
+        const wsStatus = document.getElementById('wsStatus');
+        const tokenStatus = document.getElementById('tokenStatus');
+        const providerSelect = document.getElementById('providerSelect');
+        const llmBadge = document.getElementById('llmBadge');
+        const apiKeyPanel = document.getElementById('apiKeyPanel');
+        const groqApiKeyInput = document.getElementById('groqApiKeyInput');
+        const logStreamDiv = document.getElementById('logStream');
+
+        // Load saved data
+        if (groqApiKey) {
+            groqApiKeyInput.value = groqApiKey;
+        }
+        if (authToken) {
+            tokenStatus.innerText = '✅ Token yüklendi';
+            tokenStatus.style.color = '#00ff88';
+            enableChat();
+            connectWebSocket();
+            checkAllServices();
+            checkLLMConnection();
+        }
+
+        async function checkLLMConnection() {
+            try {
+                const res = await fetch('http://127.0.0.1:11434/api/tags');
+                if (res.ok) {
+                    const data = await res.json();
+                    const models = data.models.map(m => m.name);
+                    addSystemMessage('🦙 Ollama Aktif. Modeller: ' + models.join(', '));
+                }
+            } catch (e) {
+                addSystemMessage('⚠️ Ollama\'ya bağlanılamadı. Lütfen "ollama serve" komutunu çalıştırın.');
+            }
+        }
+
+        // Provider change handler
+        providerSelect.addEventListener('change', () => {
+            const provider = providerSelect.value;
+            if (provider === 'groq') {
+                apiKeyPanel.style.display = 'block';
+                llmBadge.innerHTML = '⚡ Groq';
+            } else {
+                apiKeyPanel.style.display = 'none';
+                llmBadge.innerHTML = '🦙 Ollama';
+            }
+        });
+
+        // Save Groq API Key
+        function saveGroqKey() {
+            const key = groqApiKeyInput.value.trim();
+            if (key && key.startsWith('gsk_')) {
+                groqApiKey = key;
+                try { localStorage.setItem('groq_api_key', key); } catch(e) {}
+                addSystemMessage('✅ Groq API anahtarı kaydedildi.');
+            } else {
+                addSystemMessage('⚠️ Geçerli bir Groq API anahtarı girin (gsk_ ile başlar)');
+            }
+        }
+
+        // Login to Gateway
+        async function login() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!username || !password) {
+                addSystemMessage('❌ Kullanıcı adı ve şifre gerekli');
+                return;
+            }
+
+            addSystemMessage('🔐 Gateway\'e login olunuyor...');
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                const response = await fetch('http://127.0.0.1:9000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.access_token;
+                    try { localStorage.setItem('titan_token', authToken); } catch(e) {}
+
+                    tokenStatus.innerText = '✅ Token alındı';
+                    tokenStatus.style.color = '#00ff88';
+
+                    gatewayDot.style.background = '#00ff88';
+                    gatewayStatus.innerText = 'BAĞLI';
+
+                    addSystemMessage('✅ Login başarılı! JWT token alındı.');
+
+                    enableChat();
+                    connectWebSocket();
+                    checkAllServices();
+                } else {
+                    const error = await response.text();
+                    addSystemMessage(`❌ Login başarısız: ${error}`);
+                    tokenStatus.innerText = '❌ Login başarısız';
+                    tokenStatus.style.color = '#ff4757';
+                }
+            } catch (err) {
+                addSystemMessage(`❌ Gateway bağlantı hatası: ${err.message}`);
+                gatewayDot.style.background = '#ff4757';
+                gatewayStatus.innerText = 'BAĞLANTI YOK';
+            }
+        }
+
+        // Enable chat after login
+        function enableChat() {
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            sendBtn.style.background = 'linear-gradient(135deg, #00f2ff, #0099cc)';
+            sendBtn.style.color = '#03050a';
+        }
+
+        // Connect WebSocket to Gateway
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+
+            ws = new WebSocket('ws://127.0.0.1:9000/ws/gateway');
+
+            ws.onopen = () => {
+                wsDot.style.background = '#00ff88';
+                wsStatus.innerText = 'AÇIK';
+                addSystemMessage('🔌 WebSocket bağlantısı kuruldu. Gerçek zamanlı loglar geliyor...');
+
+                // Subscribe to logs
+                ws.send(JSON.stringify({ service: "broadcast", message: { type: "subscribe_logs" } }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'new_log') {
+                        addLogEntry(data.data);
+                    } else if (data.type === 'telemetry_update') {
+                        // CANLI GRAFİK VE SAYI GÜNCELLEME
+                        const metrics = data.data;
+                        if (metrics.active_nodes !== undefined) {
+                            document.getElementById('tokenCount').innerText =
+                                metrics.active_nodes + " Düğüm / " + (metrics.crystals || 0) + " Kristal";
+
+                            // Rastgele dalgalanma yerine gerçek tempo verisi
+                            const tempoMap = { "PIANISSIMO": 10, "PIANO": 30, "MEZZO": 55, "FORTE": 80, "FORTISSIMO": 95 };
+                            const load = tempoMap[metrics.maestro_dynamic] || 40;
+                            document.getElementById('cpuLoad').innerText = load + '%';
+                            document.getElementById('cpuBar').style.width = load + '%';
+
+                            // Resonance = Governance Score (Daha mantıklı bir eşleşme)
+                            const res = Math.round((metrics.governance_score || 0.8) * 100);
+                            document.getElementById('resonanceVal').innerText = res + '%';
+                            document.getElementById('resonanceBar').style.width = res + '%';
+                        }
+                    } else if (data.type === 'alert') {
+                        addLogEntry({ platform: 'ALERT', severity: 'CRITICAL', message: data.data.message });
+                    } else if (data.type === 'dejavu') {
+                        addLogEntry({ platform: 'TESSERACT', severity: 'INFO', message: `✨ Dejavu: ${data.data.concept}` });
+                    }
+                } catch (e) {
+                    console.error('WebSocket parse error:', e);
+                }
+            };
+
+            ws.onerror = (err) => {
+                wsDot.style.background = '#ff4757';
+                wsStatus.innerText = 'HATA';
+                addSystemMessage('⚠️ WebSocket hatası. Log akışı kapalı.');
+            };
+
+            ws.onclose = () => {
+                wsDot.style.background = '#ffaa00';
+                wsStatus.innerText = 'KAPALI (YENİDEN DENENİYOR)';
+                // Hızlı döngüyü engellemek için süreyi artırıyoruz
+                setTimeout(connectWebSocket, 10000);
+            };
+        }
+
+        // Add log entry to stream
+        function addLogEntry(log) {
+            const div = document.createElement('div');
+            const sev = log.severity || 'INFO';
+            let color = '#888';
+            if (sev === 'FATAL' || sev === 'CRITICAL') color = '#ff4757';
+            else if (sev === 'WARN') color = '#ffaa00';
+            else if (sev === 'INFO') color = '#00ff88';
+
+            div.style.color = color;
+            div.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+            div.style.padding = '4px 0';
+            div.style.fontSize = '0.65rem';
+            div.innerHTML = `[${log.platform || '?'}] ${(log.message || '').substring(0, 80)}`;
+
+            logStreamDiv.appendChild(div);
+            if (logStreamDiv.children.length > 50) {
+                logStreamDiv.removeChild(logStreamDiv.firstChild);
+            }
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        // Add system message to chat
+        function addSystemMessage(msg) {
+            const div = document.createElement('div');
+            div.style.fontSize = '0.7rem';
+            div.style.color = '#ffaa00';
+            div.style.textAlign = 'center';
+            div.style.padding = '8px';
+            div.innerText = msg;
+            chatContainer.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        // Check all service health via Gateway
+        async function checkAllServices() {
+            if (!authToken) {
+                addSystemMessage('❌ Önce login olun');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:9000/health', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const services = data.services || {};
+
+                    document.getElementById('svc_gateway').innerHTML = '<span style="color:#00ff88">✅ Çalışıyor</span>';
+                    document.getElementById('svc_operator').innerHTML = services.operator === 'healthy' ? '✅' : '❌';
+                    document.getElementById('svc_programmer').innerHTML = services.programmer === 'healthy' ? '✅' : '❌';
+                    document.getElementById('svc_researcher').innerHTML = services.researcher === 'healthy' ? '✅' : '❌';
+                    document.getElementById('svc_companion').innerHTML = services.companion === 'healthy' ? '✅' : '❌';
+                    document.getElementById('svc_orchestrator').innerHTML = (services.orchestrator === 'healthy' || services.orchestrator === 'initializing') ? '✅' : '❌';
+
+                    addSystemMessage('✅ Servis durumu güncellendi');
+                } else {
+                    addSystemMessage('❌ Sağlık kontrolü başarısız');
+                }
+            } catch (err) {
+                addSystemMessage(`❌ Servis kontrol hatası: ${err.message}`);
+            }
+        }
+
+        // Get single service health
+        async function getServiceHealth() {
+            await checkAllServices();
+        }
+
+        // Send message to LLM (via TITAN Gateway)
+        async function sendToLLM(message) {
+            const provider = providerSelect.value;
+
+            try {
+                const response = await fetch('http://127.0.0.1:9000/api/companion/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        provider: provider,
+                        api_key: provider === 'groq' ? groqApiKey : null
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.response || "Yanıt alınamadı.";
+                } else if (response.status === 504) {
+                    return "⌛ TITAN çok derin düşünüyor (Gateway Timeout). Lütfen biraz bekleyip tekrar deneyin veya Ollama'nın çalıştığından emin olun.";
+                } else {
+                    const error = await response.text();
+                    return `TITAN Hatası: ${response.status} - ${error.substring(0, 100)}`;
+                }
+            } catch (err) {
+                return `Bağlantı hatası: ${err.message}. Servislerin çalıştığından emin olun.`;
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Add message to UI
+        async function addMessage(role, content, isHtml = false) {
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'chat-user' : 'chat-titan';
+
+            if (role === 'titan') {
+                let rendered = content;
+                if (typeof marked !== 'undefined' && !isHtml) {
+                    rendered = await marked.parse(content);
+                } else if (!isHtml) {
+                    rendered = escapeHtml(content);
+                }
+                div.innerHTML = `<strong style="color: #b400ff;">TITAN █</strong><br>${rendered}`;
+            } else {
+                div.innerHTML = `<strong style="color: #00f2ff;">YOU █</strong><br>${escapeHtml(content)}`;
+            }
+
+            chatContainer.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+            if (typeof hljs !== 'undefined') {
+                div.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+        }
+
+        // Typing indicator
+        let typingIndicator = null;
+        function showTyping() {
+            if (typingIndicator) return;
+            typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span><span style="color:#8a95b0; margin-left:8px;">TITAN düşünüyor...</span>';
+            chatContainer.appendChild(typingIndicator);
+            typingIndicator.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function hideTyping() {
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            if (!authToken) {
+                addSystemMessage('❌ Lütfen önce login olun');
+                return;
+            }
+            if (isThinking) return;
+
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            messageInput.value = '';
+            await addMessage('user', message);
+
+            isThinking = true;
+            sendBtn.disabled = true;
+            showTyping();
+
+            try {
+                const reply = await sendToLLM(message);
+                hideTyping();
+                await addMessage('titan', reply);
+
+                // Save to conversation history
+                conversationHistory.push({ role: "user", content: message });
+                conversationHistory.push({ role: "assistant", content: reply });
+                if (conversationHistory.length > 30) conversationHistory = conversationHistory.slice(-30);
+
+            } catch (err) {
+                hideTyping();
+                await addMessage('titan', `⚠️ Hata: ${err.message}`);
+            } finally {
+                isThinking = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // Quick command
+        function quickCommand(cmd) {
+            if (!authToken) {
+                addSystemMessage('❌ Lütfen önce login olun');
+                return;
+            }
+            messageInput.value = cmd;
+            sendMessage();
+        }
+
+        // Clear chat
+        function clearChat() {
+            chatContainer.innerHTML = '';
+            conversationHistory = [];
+            addMessage('titan', '✨ Sohbet geçmişi temizlendi. Yeni bir diyaloğa hazırım.');
+        }
+
+        // Update metrics (Real data from Orchestrator)
+        async function updateMetrics() {
+            if (!authToken) return;
+            try {
+                const response = await fetch('http://127.0.0.1:9000/api/orchestrator/api/telemetry', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const cpu = data.cognitive_load || 0;
+                    const res = data.resonance || 0;
+
+                    document.getElementById('cpuLoad').innerText = cpu + '%';
+                    document.getElementById('cpuBar').style.width = cpu + '%';
+                    document.getElementById('resonanceVal').innerText = res + '%';
+                    document.getElementById('resonanceBar').style.width = res + '%';
+                    document.getElementById('tokenCount').innerText = (data.active_nodes || 0) + " Düğüm / " + (data.crystals || 0) + " Kristal";
+                }
+            } catch (err) {}
+        }
+        setInterval(updateMetrics, 10000);
+        updateMetrics();
+
+        // 4D Tesseract Canvas Animation
+        const canvas = document.getElementById('tesseractCanvas');
+        let ctx = canvas.getContext('2d');
+        let time = 0;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawTesseract() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const size = Math.min(canvas.width, canvas.height) * 0.2;
+
+            time += 0.008;
+
+            const points = [];
+            for (let i = 0; i < 16; i++) {
+                const x = (i & 1) ? 1 : -1;
+                const y = (i & 2) ? 1 : -1;
+                const z = (i & 4) ? 1 : -1;
+                const w = (i & 8) ? 1 : -1;
+
+                const angle = time;
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                const x1 = x * cos - w * sin;
+                const w1 = x * sin + w * cos;
+
+                const dist = 2.5;
+                const factor = dist / (dist + w1 * 0.4);
+                const projX = x1 * factor * size;
+                const projY = y * factor * size;
+                const projZ = z * factor * size;
+
+                const angle2D = time * 0.5;
+                const screenX = centerX + projX * Math.cos(angle2D) - projZ * Math.sin(angle2D);
+                const screenY = centerY + projY * 0.8 + projX * Math.sin(angle2D) * 0.3 + projZ * Math.cos(angle2D) * 0.3;
+
+                points.push({ x: screenX, y: screenY });
+            }
+
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 16; i++) {
+                for (let j = i + 1; j < 16; j++) {
+                    let diff = 0;
+                    diff += ((i & 1) !== (j & 1)) ? 1 : 0;
+                    diff += ((i & 2) !== (j & 2)) ? 1 : 0;
+                    diff += ((i & 4) !== (j & 4)) ? 1 : 0;
+                    diff += ((i & 8) !== (j & 8)) ? 1 : 0;
+                    if (diff === 1) {
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            for (const p of points) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 242, 255, 0.6)';
+                ctx.fill();
+            }
+
+            requestAnimationFrame(drawTesseract);
+        }
+
+        drawTesseract();
+        messageInput.focus();
+    </script>
+</body>
+</html>
