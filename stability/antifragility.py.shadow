@@ -1,0 +1,107 @@
+import asyncio
+import hashlib
+import logging
+import random
+import numpy as np
+from typing import Dict, Any, List, Optional, Set, Tuple
+from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+from enum import Enum
+
+from titan.brain.evolution import CodeEvolver
+from titan.core.crystal import CrystalLibrary, CrystalPurity
+
+
+# Enum values are now string constants for better readability and maintainability
+STRESS_LEVELS = {
+    "LOW": 1,
+    "MODERATE": 2,
+    "HIGH": 3,
+    "EXTREME": 4
+}
+
+@dataclass
+class ImmuneMemory:
+    """Bağışıklık hafızası - daha önce yaşanan stresler ve çözümler"""
+    id: str = field(default_factory=str)
+    stress_type: str = ""
+    stress_level: StressLevel = None
+    symptoms: List[str] = []
+    root_cause: str = ""
+    solution: str = ""
+    antibodies: List[str] = []
+    effectiveness: float = 0.0
+    occurred_at: datetime = field(default_factory=datetime)
+    last_reinforced: datetime = field(default_factory=datetime)
+    reinforcement_count: int = field(default=0)
+    mutation_version: int = field(default=1)
+
+
+class StressLevel(Enum):
+    """Stres seviye enumi"""
+    LOW = "LOW"
+    MODERATE = "MODERATE"
+    HIGH = "HIGH"
+    EXTREME = "EXTREME"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+def create_immune_memory(stress_type: str, stress_level: StressLevel, symptoms: List[str], root_cause: str, solution: str, antibodies: List[str], effectiveness: float, occurred_at: datetime, last_reinforced: datetime = None, reinforcement_count: int = 0, mutation_version: int = 1) -> ImmuneMemory:
+    """Immune hafızası oluşturma fonksiyonu"""
+    immune_memory = ImmuneMemory(
+        id=hashlib.sha256(str(stress_type).encode()).hexdigest(),
+        stress_type=stress_type,
+        stress_level=str(stress_level),
+        symptoms=symptoms,
+        root_cause=root_cause,
+        solution=solution,
+        antibodies=antibodies,
+        effectiveness=effectiveness,
+        occurred_at=occurred_at,
+        last_reinforced=last_reinforced if last_reinforced else occurred_at
+    )
+    
+    # Update reinforcement count and mutation version
+    immune_memory.reinforcement_count = reinforcement_count + 1 if reinforcement_count is not None else 1
+    immune_memory.mutation_version += 1
+    
+    return immune_memory
+
+
+class AntifragilityEngine:
+    """Antikırılganlık motoru"""
+    
+    def __init__(self):
+        self.stress_levels = [STRESS_LEVEL.LOW, STRESS_LEVEL.MODERATE, STRESS_LEVEL.HIGH]
+        
+    async def evaluate(self, stress_level: StressLevel) -> float:
+        # Simple evaluation logic - replace with actual implementation
+        return np.random.uniform(0.5, 1.5)
+
+
+async def main():
+    antifragility_engine = AntifragilityEngine()
+    
+    # Example usage
+    immune_memory = create_immune_memory(
+        stress_type="Virus",
+        stress_level=STRESS_LEVEL.HIGH,
+        symptoms=["Fever", "Headache"],
+        root_cause="Vaccine side effect",
+        solution="Antiviral medication",
+        antibodies=["Immunoglobulin A", "Immunoglobulin G"],
+        effectiveness=0.8,
+        occurred_at=datetime(2022, 1, 1),
+    )
+    
+    print(immune_memory.to_dict())
+    
+    # Evaluate antifragility
+    stress_level = STRESS_LEVEL.HIGH
+    result = await antifragility_engine.evaluate(stress_level)
+    print(f"Antifragility for {stress_level}: {result:.2f}")
+
+
+asyncio.run(main())
